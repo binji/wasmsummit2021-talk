@@ -95,5 +95,8 @@
       "no-eq-null": 2,
       "no-unused-expressions": 0
     }
+  },
+  "dependencies": {
+    "reveald3": "^1.5.5"
   }
 }

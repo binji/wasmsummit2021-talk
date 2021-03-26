@@ -8,7 +8,7 @@
 
 		<link rel="stylesheet" href="dist/reset.css">
 		<link rel="stylesheet" href="dist/reveal.css">
-		<link rel="stylesheet" href="dist/theme/black.css" id="theme">
+		<link rel="stylesheet" href="dist/theme/night.css" id="theme">
 
 		<!-- Theme used for syntax highlighted code -->
 		<link rel="stylesheet" href="plugin/highlight/monokai.css" id="highlight-theme">
@@ -16,8 +16,419 @@
 	<body>
 		<div class="reveal">
 			<div class="slides">
-				<section>Slide 1</section>
-				<section>Slide 2</section>
+
+
+<section>
+  <h3>Raw Wasm:<br>Hand-crafted WebAssembly Demos</h3>
+  <h4>WebAssembly Summit 2021</h4>
+  <table>
+    <td>
+      <small>Ben Smith <a href="https://twitter.com/binjimint">@binjimint</a></small>
+    </td>
+    <td>
+      <img class="plain" src="benji2x.png"></img>
+    </td>
+  </table>
+</section>
+
+
+<section>
+  Over the past ~3 years, I've made the following demos:
+  <section>
+    Doomfire - May 2019 - (398 bytes)
+  </section>
+  <section>
+    Metaball - May 2019 - (452 bytes)
+  </section>
+  <section>
+    Raytrace - May 2019 - (1486 bytes)
+  </section>
+  <section>
+    Snake - June 2019 - (1976 bytes)
+  </section>
+  <section>
+    Maze - October 2019 - (2047 bytes)
+  </section>
+  <section>
+    Chip 8 - September 2020 - (1020 bytes)
+  </section>
+  <section>
+    Dino - December 2020 - (2020 bytes)
+  </section>
+  <section>
+    Inflate - January 2021 - (991 bytes)
+  </section>
+</section>
+
+
+<section>
+  <h2>How?</h2>
+  <ul>
+    <li>vim</li>
+    <li>python scripts</li>
+    <li>wat2wasm (tool in wabt)</li>
+    <li>browser</li>
+  </ul>
+  <p>That's it :-)</p>
+</section>
+
+
+<section>
+  <h2>My rules:</h2>
+  <ul>
+    <li>Use as little JS as possible</li>
+    <li>Make it as small as possible</li>
+    <li>Try something new and have fun!</li>
+  </ul>
+</section>
+
+
+<section>
+  What we're making this time:
+  <p>match3 demo</p>
+</section>
+
+
+<section>
+  <h2>How our match 3 works:</h2>
+  <ul>
+    <li>8x8 grid of 8 different emojis 😀🤩🥵🥶🤠😱😈💩</li>
+    <li>3 adjacent, identical emojis in a row or column are removed</li>
+    <li>Emojis fall down to fill in the holes</li>
+    <li>You can swap two emojis horizontally or vertically</li>
+    <li>If there are no swaps left, the game is over</li>
+  </ul>
+</section>
+
+
+<section>
+  <p>Step 1: HTML, JS</p>
+
+  <section>
+    <pre><code data-trim>
+    body {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      background-color: #fff;
+      margin: 0;
+      width: 100%;
+      height: 100%;
+    }
+    </code></pre>
+    The body is a flexbox that fills the screen
+  </section>
+
+  <section>
+    <pre><code data-trim>
+    canvas {
+      object-fit: contain;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+    </code></pre>
+    The canvas is pixelated, fills the screen, but with the correct
+    aspect ratio.
+  </section>
+
+  <section>
+    <pre><code data-trim><script type="text/template">
+    <body>
+      <canvas width="150" height="150"></canvas>
+    </body>
+    </script></code></pre>
+    The canvas element itself is 150x150 pixels,<br> but will be
+    stretched to fill the available space (preserving aspect ratio).
+  </section>
+
+</section>
+
+
+<section>
+  <p>Step 2: Loading Wasm</p>
+
+  <section>
+    <pre><code data-trim>
+    const w = 150, h = 150;
+
+    (async function start() {
+      const response = await fetch('match3.wasm');
+      const moduleBytes = await response.arrayBuffer();
+      const {module, instance} =
+        await WebAssembly.instantiate(moduleBytes);
+      const exports = instance.exports;
+      const canvasData =
+        new Uint8Array(exports.mem.buffer, 0x10000, w*h*4);
+
+      // ...
+    </code></pre>
+    Fetch and instantiate the wasm module,<br>
+    then create a Uint8Array view <br>
+    at 0x10000 of 150*150*4 bytes.
+  </section>
+
+  <section>
+    <div class="fig-container" data-file="step2-grid.html"
+      data-style="margin-top:100px width:550px height:580px"></div>
+  </section>
+
+  <section>
+    <pre><code class="lang-js" data-trim>
+      // ...
+      const canvas = document.querySelector('canvas');
+      const context = canvas.getContext('2d');
+      const imageData = context.createImageData(w, h);
+
+      (function update() {
+        requestAnimationFrame(update);
+        exports.run();
+        imageData.data.set(canvasData);
+        context.putImageData(imageData, 0, 0);
+      })();
+    })();
+    </code></pre>
+    Create the Canvas2D context and 150x150 ImageData.<br>
+    For each frame, execute <code>run</code> and draw the graphics data
+    in wasm memory.
+  </section>
+
+  <section>
+    <pre><code data-trim>
+    ;; Memory map:
+    ;;
+    ;; [0x10000 .. 0x25f90]  150x150xRGBA data (4 bytes/pixel)
+    (memory (export "mem") 3)
+
+    (func (export "run")
+    )
+    </code></pre>
+    The wasm module exports memory of 3 pages (192KiB)
+    and an empty <code>run</code> function.
+  </section>
+</section>
+
+
+<section>
+  Step 3: Clearing the Screen
+
+  <section>
+  <pre><code data-trim data-line-numbers="1|2|3,10-12|7-9|4-6">
+  (func $clear-screen (param $color i32)
+    (local $i i32)
+    (loop $loop
+      ;; mem[0x10000 + i] = color
+      (i32.store offset=0x10000
+        (local.get $i) (local.get $color))
+      ;; i += 4
+      (local.set $i
+        (i32.add (local.get $i) (i32.const 4)))
+      ;; loop if i &lt; 90000
+      (br_if $loop
+        (i32.lt_s (local.get $i) (i32.const 90000)))
+    )
+  )
+  </code></pre>
+  Loop through all pixels and set them to <code>color</code>
+  </section>
+
+  <section>
+  <pre><code data-trim>
+  (func (export "run")
+    (call $clear-screen
+      (i32.const 0xff_00_00_ff))  ;; ABGR format
+  )
+  </code></pre>
+  Clear the screen to red.
+  </section>
+
+  <section>
+    <div class="fig-container" data-file="step3-clear.html"
+      data-style="margin-top:100px width:550px height:580px"></div>
+  </section>
+
+</section>
+
+
+<section>
+  Step 4: Drawing a Pixel
+
+  <section>
+  <pre><code data-trim>
+  (func $put-pixel
+    (param $x i32) (param $y i32) (param $color i32)
+    ;; mem[0x10000 + (y * 150 + x) * 4] = color
+    (i32.store offset=0x10000
+      (i32.mul
+        (i32.add
+          (i32.mul (local.get $y) (i32.const 150))
+          (local.get $x))
+        (i32.const 4))
+      (local.get $color))
+  )
+  </code></pre>
+  Calculate the pixel address, and write the color.
+  </section>
+
+  <section>
+  <pre><code data-trim>
+  (func (export "run")
+    (call $put-pixel
+      (i32.const 100) (i32.const 100)
+      (i32.const 0xff_00_00_ff))
+  )
+  </code></pre>
+  Draw a red pixel at <code>(100,100)</code>
+  </section>
+
+</section>
+
+<section>
+  Step 5: Mouse Input
+
+  <section>
+  <pre><code class="lang-js" data-trim>
+      const input =
+        new Uint8Array(exports.mem.buffer, 0x0000, 3);
+
+      function mouseEventHandler(event) {
+        // ...
+        input[0] = event.offsetX;
+        input[1] = event.offsetY;
+        input[2] = event.buttons;
+      }
+
+      canvas.addEventListener('mousemove', mouseEventHandler);
+      canvas.addEventListener('mousedown', mouseEventHandler);
+      canvas.addEventListener('mouseup', mouseEventHandler);
+  </code></pre>
+  Listen for mouse events and write the x, y and button state to Wasm
+  memory.
+  </section>
+
+  <section>
+  <pre><code data-trim>
+  ;; [0x00000 .. 0x00000]  X mouse position
+  ;; [0x00001 .. 0x00001]  Y mouse position
+  ;; [0x00002 .. 0x00002]  mouse buttons
+  (func (export "run")
+    // ...
+    (call $put-pixel
+      (i32.load8_u (i32.const 0))  ;; X
+      (i32.load8_u (i32.const 1))  ;; Y
+      (select
+        (i32.const 0xff_00_00_ff)  ;; Red
+        (i32.const 0xff_ff_00_00)  ;; Blue
+        (i32.load8_u (i32.const 2)))
+    )
+  )
+  </code></pre>
+  Draw a pixel at the current mouse coordinates<br>
+  Red if the button is clicked, otherwise blue.
+  </section>
+
+</section>
+
+
+<section>
+  Step 6: Filling a Rectangle
+
+  <section>
+  <pre><code data-trim>
+  (func $fill-rect (param $x i32) (param $y i32)
+                   (param $w i32) (param $h i32)
+                   (param $color i32)
+    (local $i i32)
+    (local $j i32)
+    ;; for (j = 0; j &lt; h; j++)
+    (loop $y-loop
+      ;; ...
+      ;; j += 1
+      (local.set $j (i32.add (local.get $j) (i32.const 1)))
+      ;; loop if j &lt; h
+      (br_if $y-loop (i32.lt_s (local.get $j) (local.get $h)))
+    )
+  )
+  </code></pre>
+  Loop over the y pixels from <code>0</code> to <code>h</code>...
+  </section>
+
+  <section>
+  <pre><code class="lang-clojure" data-trim data-line-numbers="3-12">
+  (loop $y-loop
+
+    (local.set $i (i32.const 0))
+    ;; for (i = 0; i &lt; w; i++)
+    (loop $x-loop
+      ;; ...
+      ;; i += 1
+      (local.set $i (i32.add (local.get $i) (i32.const 1)))
+      ;; loop if i &lt; w
+      (br_if $x-loop
+        (i32.lt_s (local.get $i) (local.get $w)))
+    )
+
+  )
+  </code></pre>
+  Loop over all the x pixels from <code>0</code> to <code>w</code>...
+  </section>
+
+  <section>
+  <pre><code class="lang-clojure" data-trim data-line-numbers="3-7">
+  (loop $x-loop
+
+    ;; put-pixel(x + i, y + j, color)
+    (call $put-pixel
+      (i32.add (local.get $x) (local.get $i))
+      (i32.add (local.get $y) (local.get $j))
+      (local.get $color))
+
+  )
+  </code></pre>
+  And draw a pixel at <code>(x+i, y+j)</code>
+  </section>
+
+</section>
+
+<section>
+  Step 7: Drawing a sprite
+
+  <section>
+  <pre><code class="lang-clojure" data-trim data-line-numbers="3">
+  (func $draw-sprite (param $x i32) (param $y i32)
+                     (param $w i32) (param $h i32)
+                     (param $src i32)
+    ;; ...
+  )
+  </code></pre>
+  Start with <code>$fill-rect</code>, but change the
+  <code>$color</code> parameter to <code>$src</code>
+  </section>
+
+  <section>
+  <pre><code class="lang-clojure" data-trim data-line-numbers="2,6-13">
+  ;; ...
+      ;; put-pixel(x + i, y + j, mem[src + (w * j + i) * 4])
+      (call $put-pixel
+        (i32.add (local.get $x) (local.get $i))
+        (i32.add (local.get $y) (local.get $j))
+        (i32.load
+          (i32.add
+            (local.get $src)
+            (i32.mul
+              (i32.add
+                (i32.mul (local.get $w) (local.get $j))
+                (local.get $i))
+              (i32.const 4)))))
+  ;; ...
+  </code></pre>
+  Read the color to draw from <code>$src</code>, offset by
+  <code>i</code> and <code>j</code>.
+  </section>
+
+</section>
+
 			</div>
 		</div>
 
@@ -33,7 +444,11 @@
 				hash: true,
 
 				// Learn about plugins: https://revealjs.com/plugins/
-				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ],
+
+        dependencies: [
+          { src: 'node_modules/reveald3/reveald3.js' },
+        ]
 			});
 		</script>
 	</body>

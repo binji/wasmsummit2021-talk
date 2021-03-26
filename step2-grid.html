@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<style>
+  svg { color: white; }
+  .hline { stroke: lightgray; }
+  .vline { stroke: lightgray; }
+  .cell { fill: lightblue; }
+</style>
+<body>
+</body>
+<script src="js/d3/d3.min.js"></script>
+<script>
+  const tx = 6, ty = 6;
+  const dw = 150, dh = 150;
+  const margin = {l: 15, r: 10, t: 15, b: 30};
+  const w = 500, h = 500;
+  const l = margin.l, r = w - margin.r, t = margin.t, b = h - margin.b;
+  const svg = d3.select('body').append('svg')
+    .attr('width', w + margin.l + margin.r)
+    .attr('height', h + margin.t + margin.b)
+  const g = svg.append('g')
+    .attr('transform', `translate(${margin.l}, ${margin.t})`);
+
+  const xAxis = d3.scaleLinear().domain([0, dw]).range([l, r]);
+  const yAxis = d3.scaleLinear().domain([0, dh]).range([t, b]);
+
+  const ticks = (scale, n) => {
+    const d = scale.domain();
+    const offset = 0.49;
+    const a = [];
+    for (let i = 0; i < n - 1; ++i) {
+      a.push(Math.floor(i * (d[1] - d[0]) / (n - 1)) + offset);
+    }
+    a.push(d[1] - 1 + offset);
+    return a;
+  };
+
+  // top axis
+  g.append('g')
+    .attr('transform', `translate(0, ${margin.t})`)
+    .call(d3.axisTop(xAxis).tickValues(ticks(xAxis, tx)).tickSizeOuter(0))
+
+  // left axis
+  g.append('g')
+    .attr('transform', `translate(${margin.l}, 0)`)
+    .call(d3.axisLeft(yAxis).tickValues(ticks(yAxis, ty)).tickSizeOuter(0));
+
+  const vData = [0, dw];
+  const hData = [0, dh];
+  const cellData = [];
+
+  const hlines = g.append('g').attr('class', 'hline');
+  const vlines = g.append('g').attr('class', 'vline');
+  const cells = g.append('g').attr('class', 'cell')
+
+  const info = svg.append('g').attr('class', 'info');
+
+  const addr = (x, y) => 0x10000 + (y * dw + x) * 4;
+
+  function update() {
+    hlines.selectAll('line')
+      .data(hData)
+      .join('line')
+      .attr('x1', l).attr('y1', d => yAxis(d))
+      .attr('x2', r).attr('y2', d => yAxis(d));
+
+    vlines.selectAll('line')
+      .data(vData)
+      .join('line')
+      .attr('y1', t).attr('x1', d => xAxis(d))
+      .attr('y2', b).attr('x2', d => xAxis(d));
+
+    cells.selectAll('rect')
+      .data(cellData)
+      .join('rect')
+      .attr('width', xAxis(1) - xAxis(0))
+      .attr('height', yAxis(1) - yAxis(0))
+      .attr('x', d => xAxis(d.x))
+      .attr('y', d => yAxis(d.y))
+
+    info.selectAll('text')
+     .data(cellData)
+     .join('text')
+     .attr('transform', `translate(${margin.l}, ${h + margin.t})`)
+     .attr('fill', 'currentcolor')
+     .text(d => `x:${d.x} y:${d.y} addr:0x10000 + (${d.y} * ${dw} + ${d.x})*4 = 0x${addr(d.x, d.y).toString(16)}`);
+  }
+
+  update();
+
+  svg.on('mousemove', e => {
+    let [x, y] = d3.pointer(e);
+    let ix = Math.floor(xAxis.invert(x - l)),
+        iy = Math.floor(yAxis.invert(y - t));
+    if (ix >= 0 && ix < dw && iy >= 0 && iy < dh) {
+      vData[2] = ix;
+      vData[3] = ix + 1;
+      hData[2] = iy;
+      hData[3] = iy + 1;
+      cellData[0] = {x:ix, y:iy};
+    } else {
+      vData.length = 2;
+      hData.length = 2;
+      cellData.length = 0;
+    }
+
+    update();
+  });
+
+</script>

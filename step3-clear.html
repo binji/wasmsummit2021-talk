@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<style>
+  svg { background-color: #111; color: white; }
+  .hline { stroke: lightgray; }
+  .vline { stroke: lightgray; }
+  .cell { fill: red; }
+  .info text { font-family: monospace; }
+</style>
+<body>
+</body>
+<script src="js/d3/d3.min.js"></script>
+<script>
+  const tx = 6, ty = 6;
+  const dw = 150, dh = 150;
+  const margin = {l: 15, r: 10, t: 15, b: 30};
+  const w = 450, h = 450;
+  const l = margin.l, r = w - margin.r, t = margin.t, b = h - margin.b;
+  const svg = d3.select('body').append('svg')
+    .attr('width', w + margin.l + margin.r)
+    .attr('height', h + margin.t + margin.b)
+  const g = svg.append('g')
+    .attr('transform', `translate(${margin.l}, ${margin.t})`);
+
+  const xAxis = d3.scaleLinear().domain([0, dw]).range([l, r]);
+  const yAxis = d3.scaleLinear().domain([0, dh]).range([t, b]);
+
+  const ticks = (scale, n) => {
+    const d = scale.domain();
+    const offset = 0.49;
+    const a = [];
+    for (let i = 0; i < n - 1; ++i) {
+      a.push(Math.floor(i * (d[1] - d[0]) / (n - 1)) + offset);
+    }
+    a.push(d[1] - 1 + offset);
+    return a;
+  };
+
+  // top axis
+  g.append('g')
+    .attr('transform', `translate(0, ${margin.t})`)
+    .call(d3.axisTop(xAxis).tickValues(ticks(xAxis, tx)).tickSizeOuter(0))
+
+  // left axis
+  g.append('g')
+    .attr('transform', `translate(${margin.l}, 0)`)
+    .call(d3.axisLeft(yAxis).tickValues(ticks(yAxis, ty)).tickSizeOuter(0));
+
+  const vData = [0, dw];
+  const hData = [0, dh];
+  const cellData = [];
+  let step = (dh * dw + dw) / 2;
+
+  const hlines = g.append('g').attr('class', 'hline');
+  const vlines = g.append('g').attr('class', 'vline');
+  const cells = g.append('g').attr('class', 'cell')
+
+  const info = svg.append('g').attr('class', 'info')
+    .attr('transform', `translate(${margin.l}, ${h + margin.t})`);
+
+  hlines.selectAll('line')
+    .data(hData)
+    .join('line')
+    .attr('x1', l).attr('y1', d => yAxis(d))
+    .attr('x2', r).attr('y2', d => yAxis(d));
+
+  vlines.selectAll('line')
+    .data(vData)
+    .join('line')
+    .attr('y1', t).attr('x1', d => xAxis(d))
+    .attr('y2', b).attr('x2', d => xAxis(d));
+
+  const xStep = i => i % dw;
+  const yStep = i => Math.floor(i / dw);
+  const fi = i => i * 4;
+  const fx = i => xStep(i);
+  const fy = i => yStep(i);
+  const faddr = i => d3.format("#5x")(0x10000 + i * 4);
+
+  function update() {
+    cellData.length = 0;
+    let x = xStep(step), y = yStep(step);
+    cellData.push({x: 0, y: 0, w: dw, h: y, color: 'red'});
+    if (x != 0) {
+      cellData.push({x: 0, y, w: x, h: 1, color: 'red'});
+    }
+    if (step < dw*dh) {
+      cellData.push({x, y, w: 1, h: 1, color: 'white'});
+    }
+
+    cells.selectAll('rect')
+      .data(cellData)
+      .join('rect')
+      .attr('width', d => xAxis(d.w) - xAxis(0))
+      .attr('height', d => yAxis(d.h) - yAxis(0))
+      .attr('x', d => xAxis(d.x))
+      .attr('y', d => yAxis(d.y))
+      .attr('fill', d => d.color);
+
+    info.selectAll('text').remove();
+    info
+     .append('text')
+     .attr('x', 0)
+     .attr('fill', 'currentcolor')
+     .text(`i:${fi(step)}`);
+
+    info
+     .append('text')
+     .attr('x', 60)
+     .attr('fill', 'currentcolor')
+     .text(`x:${fx(step)}`);
+
+    info
+     .append('text')
+     .attr('x', 100)
+     .attr('fill', 'currentcolor')
+     .text(`y:${fy(step)}`);
+
+    info
+     .append('text')
+     .attr('x', 150)
+     .attr('fill', 'currentcolor')
+     .text(`addr:${faddr(step)}`);
+
+     // .text(i => `i:${fi(i)} x:${fx(i)} y:${fy(i)} addr:${faddr(step)}`);
+  }
+
+  update();
+
+  const input = d3.select('body')
+    .append('div')
+    .append('input')
+    .style('width', `${w + margin.l + margin.r}px`)
+    .attr('type', 'range')
+    .attr('min', 0)
+    .attr('max', dw*dh)
+    .attr('value', step)
+    .on('input', e => {
+      step = e.target.value;
+      update();
+    });
+
+</script>
