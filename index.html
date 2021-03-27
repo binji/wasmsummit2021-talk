@@ -231,6 +231,15 @@
   )
   </code></pre>
   Loop through all pixels and set them to <code>color</code>
+
+  <aside class="notes" data-markdown>
+    1. function definition w/ params
+    1. local variables
+    1. loop structure
+    1. increment at end of loop
+    1. store w/ offset
+    </ol>
+  </aside>
   </section>
 
   <section>
@@ -241,6 +250,11 @@
   )
   </code></pre>
   Clear the screen to red.
+
+  <aside class="notes" data-markdown>
+    1. **call** instruction
+    1. ABGR color format
+  </aside>
   </section>
 
   <section>
@@ -326,6 +340,16 @@
   </code></pre>
   Draw a pixel at the current mouse coordinates<br>
   Red if the button is clicked, otherwise blue.
+
+  <aside class="notes" data-markdown>
+    1. **i32.load8_u**
+    1. **select**
+  </aside>
+  </section>
+
+  <section>
+    <div class="fig-container" data-file="step5-demo.html"
+      data-style="margin-top:100px width:550px height:580px"></div>
   </section>
 
 </section>
@@ -389,6 +413,11 @@
   And draw a pixel at <code>(x+i, y+j)</code>
   </section>
 
+  <section>
+    <div class="fig-container" data-file="step6-demo.html"
+      data-style="margin-top:100px width:550px height:580px"></div>
+  </section>
+
 </section>
 
 <section>
@@ -425,6 +454,132 @@
   </code></pre>
   Read the color to draw from <code>$src</code>, offset by
   <code>i</code> and <code>j</code>.
+
+  <aside class="notes" data-markdown>
+    1. **i32.load**
+  </aside>
+  </section>
+
+  <section>
+    <div class="fig-container" data-file="step7-sprite.html"
+      data-style="margin-top:100px width:550px height:580px"></div>
+
+  <aside class="notes" data-markdown>
+    Demo drawing outside of bounds
+  </aside>
+  </section>
+
+</section>
+
+
+<section>
+  Step 8,9: Masking and clipping pixels
+
+  <section>
+  <pre><code class="lang-clojure" data-trim>
+  (func $put-pixel (param $x i32) (param $y i32) (param $color i32)
+    ;; return if the x/y coordinate is out of bounds
+    (br_if 0
+      (i32.or
+        (i32.ge_u (local.get $x) (i32.const 150))
+        (i32.ge_u (local.get $y) (i32.const 150))))
+    ...
+  )
+  </code></pre>
+  Don't draw pixels that have coordinates &gt; 150
+
+  <aside class="notes" data-markdown>
+    1. br_if with 0 is conditional return
+    1. **i32.or** is bitwise or, but can be used for logical statements
+  </aside>
+  </section>
+
+  <section>
+  <pre><code class="lang-clojure" data-trim>
+  (func $draw-sprite ...
+
+        ;; pixel = mem[src + (w * j + i) * 4]
+        (local.set $pixel (i32.load ...)))
+
+        ;; if (pixel != 0)
+        (if (local.get $pixel)
+          (then
+            (call $put-pixel ...))
+
+  )
+  </code></pre>
+  Load the pixel, but only draw it if it is non-zero.
+
+  <aside class="notes" data-markdown>
+    1. **if** then statement
+    1. checks for non-zero by default
+  </aside>
+  </section>
+
+  <section>
+    <div class="fig-container" data-file="step9-demo.html"
+      data-style="margin-top:100px width:550px height:580px"></div>
+  </section>
+
+</section>
+
+
+<section>
+  Step 11: Scaling sprites
+
+  <section>
+  <pre><code class="lang-clojure" data-trim>
+  (func $draw-sprite (param $x i32) (param $y i32)
+                     (param $src i32)
+                     (param $sw i32) (param $sh i32)
+                     (param $dw i32) (param $dh i32)
+    (local $dx f32)
+    (local $dy f32)
+
+    ;; dx = sw / dw
+    (local.set $dx
+      (f32.div (f32.convert_i32_s (local.get $sw))
+               (f32.convert_i32_s (local.get $dw))))
+    ;; dy = sh / dh
+    (local.set $dy
+      (f32.div (f32.convert_i32_s (local.get $sh))
+               (f32.convert_i32_s (local.get $dh))))
+  </code></pre>
+
+  <aside class="notes" data-markdown>
+    1. f32 values
+    1. f32.convert_i32_s
+    1. f32.div
+  </aside>
+  </section>
+
+  <section>
+  <pre><code class="lang-clojure" data-trim>
+      ;; pixel = mem[src + (sw * j * dy + i * dx)]
+      (local.set $pixel
+        (i32.load
+          (i32.add
+            (local.get $src)
+            (i32.add
+              (i32.mul
+                (local.get $sw)
+                (i32.trunc_f32_s
+                  (f32.mul (f32.convert_i32_s (local.get $j))
+                           (local.get $dy))))
+              (i32.trunc_f32_s
+                (f32.mul (f32.convert_i32_s (local.get $i))
+                         (local.get $dx)))))))
+  </code></pre>
+
+  <aside class="notes" data-markdown>
+    1. **f32.mul**
+    1. **f32.trunc_f32_s**
+  </aside>
+  </section>
+
+  <section>
+    <div class="fig-container" data-file="step11-scale.html"
+      data-style="margin-top:100px width:550px height:580px"></div>
   </section>
 
 </section>

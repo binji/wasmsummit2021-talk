@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<style>
+  body { color: white; }
+  svg { background-color: #111; }
+  .hline { stroke: lightgray; }
+  .vline { stroke: lightgray; }
+  .cell { fill: red; }
+  .hilite { stroke: red; fill: rgba(0, 0, 0, 0); }
+  .info text { font-family: monospace; }
+  .hflex { display: flex; flex-direction: row; }
+</style>
+<body>
+</body>
+<script src="js/d3/d3.min.js"></script>
+<script>
+  const margin = {l: 15, r: 10, t: 15, b: 10};
+  const w = 480, h = 330;
+  const l = margin.l, r = w - margin.r, t = margin.t, b = h - margin.b;
+  const svg = d3.select('body').append('svg')
+    .attr('width', w + margin.l + margin.r)
+    .attr('height', h + margin.t + margin.b)
+  const g = svg.append('g')
+    .attr('transform', `translate(${margin.l}, ${margin.t})`);
+
+  const ticks = (scale, n) => {
+    const d = scale.domain();
+    const offset = 0.49;
+    const a = [];
+    for (let i = 0; i < n - 1; ++i) {
+      a.push(Math.floor(i * (d[1] - d[0]) / (n - 1)) + offset);
+    }
+    a.push(d[1] - 1 + offset);
+    return a;
+  };
+
+  class Grid {
+    constructor(x, y, dw, dh, rw, rh, tx, ty) {
+      this.dw = dw;
+      this.dh = dh;
+      this.xAxis = d3.scaleLinear().domain([0, dw]).range([0, rw]);
+      this.yAxis = d3.scaleLinear().domain([0, dh]).range([0, rh]);
+
+      this.grid = g.append('g')
+        .attr('transform', `translate(${x}, ${y})`);
+
+      // top axis
+      this.grid.append('g')
+        .call(d3.axisTop(this.xAxis)
+                .tickValues(ticks(this.xAxis, tx))
+                .tickSizeOuter(0))
+
+      // left axis
+      this.grid.append('g')
+        .call(d3.axisLeft(this.yAxis)
+                .tickValues(ticks(this.yAxis, ty))
+                .tickSizeOuter(0));
+
+      this.vData = [0, dw];
+      this.hData = [0, dh];
+      this.cellData = [];
+      this.hiliteData = [];
+
+      this.hlines = this.grid.append('g').attr('class', 'hline');
+      this.vlines = this.grid.append('g').attr('class', 'vline');
+      this.cells = this.grid.append('g').attr('class', 'cell')
+      this.hilite = this.grid.append('g').attr('class', 'hilite');
+
+      this.update();
+    }
+
+    update() {
+      this.hlines.selectAll('line')
+        .data(this.hData)
+        .join('line')
+        .attr('x1', this.xAxis(0)).attr('y1', d => this.yAxis(d))
+        .attr('x2', this.xAxis(this.dw)).attr('y2', d => this.yAxis(d));
+
+      this.vlines.selectAll('line')
+        .data(this.vData)
+        .join('line')
+        .attr('y1', this.yAxis(0)).attr('x1', d => this.xAxis(d))
+        .attr('y2', this.yAxis(this.dh)).attr('x2', d => this.xAxis(d));
+
+      this.cells.selectAll('rect')
+        .data(this.cellData)
+        .join('rect')
+        .attr('width', d => this.xAxis(d.w) - this.xAxis(0))
+        .attr('height', d => this.yAxis(d.h) - this.yAxis(0))
+        .attr('x', d => this.xAxis(d.x))
+        .attr('y', d => this.yAxis(d.y))
+        .attr('fill', d => d.color);
+
+      this.hilite.selectAll('rect')
+        .data(this.hiliteData)
+        .join('rect')
+        .attr('width', d => this.xAxis(d.w) - this.xAxis(0))
+        .attr('height', d => this.yAxis(d.h) - this.yAxis(0))
+        .attr('x', d => this.xAxis(d.x))
+        .attr('y', d => this.yAxis(d.y))
+    }
+  };
+
+  const ssw = 16, ssh = 16;
+  let sox = 10, soy = 10;
+  let sdw = 32, sdh = 32;
+
+  let step = (sdw * sdh + sdh) / 2;
+  const pal = [
+    "#000000",
+    "#df7126",
+    "#fbf236",
+    "#663931",
+    "#ac3232",
+    "#639bff",
+    "#5fcde4",
+    "#d95763",
+    "#cbdbfc",
+    "#8f563b",
+    "#45283c",
+    "#5b6ee1",
+    "#99e550",
+    "#800094",
+    "#76428a",
+    "#222034",
+    "#ffffff",
+  ];
+  const pix = [
+    00,00,00,00,00,00,01,01,01,01,00,00,00,00,00,00,
+    00,00,00,00,01,01,02,02,02,02,01,01,00,00,00,00,
+    00,00,00,01,02,02,02,02,02,02,02,02,01,00,00,00,
+    00,00,01,02,02,02,02,02,02,02,02,02,02,01,00,00,
+    00,01,02,02,02,02,03,03,02,02,03,03,02,02,01,00,
+    00,01,02,02,02,02,03,03,02,02,03,03,02,02,01,00,
+    01,02,02,02,02,02,03,03,02,02,03,03,02,02,02,01,
+    01,02,03,02,02,02,03,03,02,02,03,03,02,03,02,01,
+    01,02,03,03,02,02,02,02,02,02,02,02,02,03,02,01,
+    01,02,03,03,03,03,03,03,03,03,03,03,03,03,02,01,
+    00,01,02,03,16,16,16,16,16,16,16,16,03,02,01,00,
+    00,01,02,02,03,03,03,03,03,03,03,03,02,02,01,00,
+    00,00,01,02,02,03,03,03,03,03,03,02,02,01,00,00,
+    00,00,00,01,02,02,02,03,03,03,02,02,01,00,00,00,
+    00,00,00,00,01,01,02,02,02,02,01,01,00,00,00,00,
+    00,00,00,00,00,00,01,01,01,01,00,00,00,00,00,00,
+  ];
+  const sprite = Array.from({length:16*16}, (_,i) => {
+    const x = i % 16;
+    const y = Math.floor(i / 16);
+    const color = pal[pix[i]];
+    return {x, y, w: 1, h: 1, color};
+  });
+
+  const dstGrid = new Grid(l, t, 150, 150, 300, 300, 6, 6);
+  const srcGrid = new Grid(l + 350, t, ssw, ssh, 100, 100, 5, 5);
+
+  srcGrid.cellData = sprite;
+
+  const info = svg.append('g').attr('class', 'info')
+    .attr('transform', `translate(360, 180)`);
+
+  const getPos = n => {
+    const i = n % sdw;
+    const j = Math.floor(n / sdw);
+    const sx = Math.floor(i * (ssw / sdw));
+    const sy = Math.floor(j * (ssh / sdh));
+    const dx = sox + i;
+    const dy = soy + j;
+    const si = sy * ssw + sx;
+    if (si >= sprite.length) {
+        throw `bad n:${n} i:${i} j:${j}  ${sy} * ${ssw} + ${sx} =  ${si} >= ${sprite.length}`;
+    }
+    return {i, j, sx, sy, dx, dy, cell: sprite[sy * ssw + sx]};
+  };
+
+  function update() {
+    dstGrid.cellData.length = 0;
+    for (let n = 0; n < step; ++n) {
+      const p = getPos(n);
+      if (p.cell.color != '#000000' && p.dx < 150 && p.dy < 150) {
+        dstGrid.cellData.push({...p.cell, x: p.dx, y: p.dy});
+      }
+    }
+
+    const curp = getPos(step);
+    if (curp.dx < 150 && curp.dy < 150) {
+      srcGrid.hiliteData[0] = {x:curp.sx, y:curp.sy, w:1, h:1};
+      dstGrid.hiliteData[0] = {x:curp.dx, y:curp.dy, w:1, h:1};
+    } else {
+      srcGrid.hiliteData.length = 0;
+      dstGrid.hiliteData.length = 0;
+    }
+
+    dstGrid.update();
+    srcGrid.update();
+
+    info.selectAll('text').remove();
+    info
+     .append('text')
+     .attr('x', 0)
+     .attr('fill', 'currentcolor')
+     .text(`i:${curp.i}`);
+
+    info
+     .append('text')
+     .attr('x', 60)
+     .attr('fill', 'currentcolor')
+     .text(`j:${curp.j}`);
+
+    info
+     .append('text')
+     .attr('x', 0)
+     .attr('y', 30)
+     .attr('fill', 'currentcolor')
+     .text(`sx:${curp.sx}`);
+
+    info
+     .append('text')
+     .attr('x', 60)
+     .attr('y', 30)
+     .attr('fill', 'currentcolor')
+     .text(`sy:${curp.sy}`);
+
+    info
+     .append('text')
+     .attr('x', 0)
+     .attr('y', 60)
+     .attr('fill', 'currentcolor')
+     .text(`dx:${curp.dx}`);
+
+    info
+     .append('text')
+     .attr('x', 60)
+     .attr('y', 60)
+     .attr('fill', 'currentcolor')
+     .text(`dy:${curp.dy}`);
+
+    info
+     .append('text')
+     .attr('x', 0)
+     .attr('y', 90)
+     .attr('fill', 'currentcolor')
+     .text(`src:${d3.format('#4x')(0x100 + (curp.sy * 16 + curp.sx) * 4)}`);
+
+    info
+     .append('text')
+     .attr('x', 0)
+     .attr('y', 120)
+     .attr('fill', 'currentcolor')
+     .text(`dst:${d3.format('#4x')(0x10000 + (curp.dy * 16 + curp.dx) * 4)}`);
+  }
+
+  update();
+
+  function range(name, value, min, max, f) {
+    return d3.select('body')
+      .append('div').attr('class', 'hflex')
+      .call(e => e.append('span').text(`${name}:`))
+      .append('input')
+      .style('width', `100%`)
+      .attr('type', 'range')
+      .attr('min', min)
+      .attr('max', max)
+      .attr('value', value)
+      .on('input change', e => { f(+e.target.value); update(); });
+  }
+
+  const steps = range('step', step, 0, sdw * sdh - 1, v => {step = v;});
+  range('x', sox, 0, 149, v => {sox = v;});
+  range('y', soy, 0, 149, v => {soy = v;});
+  range('dw', sdw, 1, 100, v => {sdw = v; updateSteps(); });
+  range('dh', sdh, 1, 100, v => { sdh = v; updateSteps(); });
+
+  function updateSteps() {
+    const oldValue = steps.node().value;
+    const oldMax = steps.attr('max');
+    const percent =  oldMax > 0 ? oldValue / oldMax : 0;
+    const newMax = sdw * sdh - 1;
+    step = Math.min(Math.floor(newMax * percent), newMax);
+    steps.attr('max', newMax);
+    steps.node().value = step;
+  }
+
+
+</script>
