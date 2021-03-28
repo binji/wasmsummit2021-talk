@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<style>
+  body { color: white; }
+  svg { color: lightgray; }
+  .emoji { font-size: 45px; }
+</style>
+<body>
+</body>
+<script src="js/d3/d3.min.js"></script>
+<script>
+  const A = 10, B = 30;
+  const margin = {l: 15, r: 10, t: 15, b: 30};
+  const w = 500, h = 500;
+  const l = margin.l, r = w - margin.r, t = margin.t, b = h - margin.b;
+
+  function hflex(label) {
+    const ret = d3.select('body').append('div').attr('class', 'hflex')
+    if (label) {
+      ret.append('span').text(label).style('width', '5em');
+    }
+    return ret;
+  }
+
+  const svg = hflex().style('justify-content', 'center')
+    .append('svg')
+      .attr('width', w + margin.l + margin.r)
+      .attr('height', h + margin.t + margin.b)
+  const g = svg.append('g')
+    .attr('transform', `translate(${margin.l}, ${margin.t})`);
+
+  const yAxis = d3.scaleLinear().domain([B, A]).range([t, b]);
+  const tAxis = d3.scaleLinear().domain([0, 1]).range([l, r]);
+
+  g.append('g')
+    .attr('transform', `translate(${margin.l}, 0)`)
+    .call(d3.axisLeft(yAxis))
+
+  g.append('g')
+    .attr('transform', `translate(0, ${b})`)
+    .call(d3.axisBottom(tAxis))
+
+  const emoji = g.append('text')
+    .attr('class', 'emoji')
+    .attr('text-anchor', 'middle')
+    .attr('dy', '0.2em')
+    .text('🤠');
+
+  const path = g.append('path')
+    .attr('stroke', 'lightgray')
+    .attr('fill', 'none');
+
+  const lerp = t => (A + (B - A) * t);
+  const cubicIn = t => lerp(t * t * t);
+  const cubicOut = t => lerp(t * (3 + t * (t - 3)));
+  let f = lerp;
+  let now = 0.5;
+
+  function update() {
+    const dt = 0.05;
+    const p = d3.path();
+    p.moveTo(tAxis(0), yAxis(f(0)));
+    for (let t = dt; t < 1; t += dt) {
+      p.lineTo(tAxis(t), yAxis(f(t)));
+    }
+    p.lineTo(tAxis(1), yAxis(f(1)));
+    path.attr('d', p.toString());
+
+    emoji
+      .attr('x', tAxis(now))
+      .attr('y', yAxis(f(now)))
+  }
+
+  update();
+
+  function button(target, name, f) {
+    return target.append('button').text(name).on('click', f);
+  }
+
+  function radio(target, name, values, f) {
+    let checked = true;
+
+    for (let id of values) {
+      const input = target.append('input')
+        .attr('type', 'radio')
+        .attr('id', id)
+        .attr('name', name)
+        .on('click', f);
+      target.append('label')
+        .attr('for', id)
+        .text(id);
+
+      if (checked) {
+        input.attr('checked', '');
+        checked = false;
+      }
+    }
+  }
+
+  const doPath = e => {
+    switch (e.target.id) {
+      case 'linear': f = lerp; break;
+      case 'cubic-in': f = cubicIn; break;
+      case 'cubic-out': f = cubicOut; break;
+    }
+    update();
+  };
+
+  const msecs = 1000;
+  let start;
+  function raf(t) {
+    if (start === undefined) { start = t; }
+    const elapsed = t - start;
+    now = Math.min(elapsed / msecs, 1);
+    update();
+    if (elapsed < msecs) {
+      requestAnimationFrame(raf);
+    } else {
+      start = undefined;
+    }
+  }
+
+  let interval;
+  function play() {
+    if (start === undefined) {
+      requestAnimationFrame(raf);
+    }
+  }
+
+  const row = hflex('path:');
+  radio(row, 'path', ['linear', 'cubic-in', 'cubic-out'], doPath);
+  button(row, '▶️', play);
+
+</script>

@@ -8,6 +8,8 @@
       margin: 0;
       width: 100%;
       height: 100%;
+      border: 4px white solid;
+      box-sizing: border-box;
     }
     canvas {
       object-fit: contain;
@@ -17,23 +19,31 @@
       image-rendering: crisp-edges;
       cursor: none;
     }
+
+    body.bg { background-color: white; }
+    canvas.cursor { cursor: default; }
   </style>
 </head>
 <body>
   <canvas width="150" height="150"></canvas>
   <script>
+    const params = new URLSearchParams(location.search);
     const w = 150, h = 150;
 
     const canvas = document.querySelector('canvas');
     const context = canvas.getContext('2d');
     const imageData = context.createImageData(w, h);
 
+    if (params.get('cursor') !== null) { canvas.className = 'cursor'; }
+    if (params.get('bg') !== null) { document.body.className = 'bg'; }
+
     function clamp(min, x, max) {
       return Math.min(Math.max(x, min), max);
     }
 
     (async function start() {
-      const response = await fetch('step9.wasm');
+      const wasm = params.get('wasm');
+      const response = await fetch(`${wasm}.wasm`);
       const moduleBytes = await response.arrayBuffer();
       const {module, instance} = await WebAssembly.instantiate(moduleBytes, {Math});
       const exports = instance.exports;
