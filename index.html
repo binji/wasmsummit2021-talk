@@ -473,7 +473,7 @@
 
 
 <section>
-  Step 8,9: Masking and clipping pixels
+  Step 8-10: Masking and clipping pixels
 
   <section>
   <pre><code class="lang-clojure" data-trim>
@@ -588,65 +588,54 @@
 
 
 <section>
+  How to represent the grid?
   <section>
-    <p>How to represent the grid?</p>
+    <p>Using <b>1 byte per cell</b></p>
     <ul>
-      <li>We could have 8 x 8 = 64-element array of bytes</li>
-      <li>Each byte is a value between 0 and 7, one for each emoji</li>
-      <li>To check for a match:
-        <ol>
-          <li>Create a matched set that is initially empty</li>
-          <li>For each 3 horizontally-adjacent cells; if all 3 match, add it to
-            the set</li>
-          <li>For each 3 vertically-adjacent cells; if all 3 match, add it to
-            the set</li>
-        </ol>
-      </li>
+      <li>We could have 64-element array of bytes</li>
+      <li>Each byte is a value between 1 and 8, one for each emoji</li>
     </ul>
   </section>
 
   <section>
-    <p>Example</p>
     <div class="fig-container" data-file="step12-grid.html"
-      data-style="width:550px height:580px"></div>
+      data-style="margin-top:100px width:750px height:650px"></div>
 
   <aside class="notes" data-markdown>
   </aside>
   </section>
 
   <section>
-    <p>Grid representation using <b>bits</b></p>
+    <p>Using <b>1 bit per cell</b> instead</p>
     <ul>
       <li>For each emoji, we have an i64 value representing the grid</li>
       <li>Each bit is 1 if there is an emoji in that cell</li>
-      <li>To check for a match:
-        <ol>
-          <li>We can use an i64 for the matched set</li>
-          <li>Use <code>i64.and</code> to check if all 3 match</li>
-          <li>Use <code>i64.or</code> to add elements to the set</li>
-        </ol>
-      </li>
     </ul>
   </section>
 
   <section>
-    <p>Example (with bits)</p>
     <div class="fig-container" data-file="step12-bits.html"
-      data-style="width:750px height:650px"></div>
+      data-style="margin-top:100px width:750px height:650px"></div>
 
   <aside class="notes" data-markdown>
   </aside>
   </section>
+
+  <section>
+    Using <b>1 bit per cell</b> makes some algorithms simpler (we'll see this
+    later).
+  </section>
+
 
 </section>
 
 
 <section>
-  Step 12: Draw the Grid
+  Step 12-13: Draw the Grid
 
   <section>
     <div class="fig-container" data-file="step12-ctz.html"
-      data-style="margin-top:100px width:600px height:650px"></div>
+      data-style="margin-top:100px width:750px height:650px"></div>
 
   <aside class="notes" data-markdown>
     1. Find the index of the lowest bit set
@@ -682,7 +671,7 @@
   </section>
 
   <section>
-    <div class="fig-container" data-file="wasm-demo.html?wasm=step12&bg"
+    <div class="fig-container" data-file="wasm-demo.html?wasm=step13&bg"
       data-style="margin-top:100px width:550px height:550px"></div>
   </section>
 
@@ -690,12 +679,11 @@
 
 
 <section>
+  Step 15-18: Animation
 
   <section>
-  <p>Animation Easing</p>
-
   <div class="fig-container" data-file="step15-lerp.html"
-    data-style="width:550px height:650px"></div>
+    data-style="margin-top:100px width:550px height:650px"></div>
 
   <aside class="notes" data-markdown>
     1. Linear interpolation looks unnatural
@@ -769,8 +757,97 @@
 </section>
 
 
-			</div>
-		</div>
+<section>
+
+  <section>
+    <p>⏩ Step 19: Dragging an Emoji</p>
+    <div class="fig-container" data-file="wasm-demo.html?wasm=step19&cursor&bg"
+      data-style="width:550px height:550px"></div>
+  </section>
+
+  <section>
+    <p>⏩ Step 20: Clamping to 4 Adjacent Cells</p>
+    <div class="fig-container" data-file="wasm-demo.html?wasm=step20&cursor&bg"
+      data-style="width:550px height:550px"></div>
+  </section>
+
+  <section>
+    <p>⏩ Step 21: Swap Animation</p>
+    <div class="fig-container" data-file="wasm-demo.html?wasm=step21&cursor&bg"
+      data-style="width:550px height:550px"></div>
+  </section>
+
+  <section>
+    <p>⏩ Step 24: Swap Cells After Drag</p>
+    <div class="fig-container" data-file="wasm-demo.html?wasm=step24&cursor&bg"
+      data-style="width:550px height:550px"></div>
+  </section>
+
+</section>
+
+
+<section>
+  Step 25: Checking for matches
+
+  <section>
+    To check for a match:
+    <ol>
+      <li>We can use an i64 for the matched set</li>
+      <li>Use <code>i64.and</code> to check if all 3 match</li>
+      <li>Use <code>i64.or</code> to add elements to the set</li>
+    </ol>
+  </section>
+
+  <section>
+    <div class="fig-container" data-file="step25-match.html"
+      data-style="margin-top:100px width:750px height:650px"></div>
+  </section>
+
+  <section>
+  <pre><code class="lang-clojure" data-trim>
+    ;; if ((valid &amp; 1) &amp;&amp; ((grid &amp; pattern) == pattern)) ...
+    (if (i32.and
+          (i32.wrap_i64
+            (i64.and (local.get $valid) (i64.const 1)))
+          (i64.eq
+            (i64.and (local.get $grid) (local.get $pattern))
+            (local.get $pattern)))
+      (then
+        ;; result |= pattern
+        (local.set $result
+          (i64.or (local.get $result) (local.get $pattern)))))
+  </code></pre>
+  </section>
+
+  <section>
+    <div class="fig-container" data-file="wasm-demo.html?wasm=step25&cursor&bg"
+      data-style="margin-top:100px width:550px height:550px"></div>
+  </section>
+
+</section>
+
+
+<section>
+
+  <section>
+    <p>⏩ Step 26: Swap back If No Match</p>
+    <div class="fig-container" data-file="wasm-demo.html?wasm=step26&cursor&bg"
+      data-style="width:550px height:550px"></div>
+  </section>
+
+</section>
+
+
+<section>
+  Step 27: Move Emojis Down After Swap
+
+  <section>
+    <div class="fig-container" data-file="wasm-demo.html?wasm=step27&cursor&bg"
+      data-style="width:550px height:550px"></div>
+  </section>
+
+</section>
+
 
 		<script src="dist/reveal.js"></script>
 		<script src="plugin/notes/notes.js"></script>

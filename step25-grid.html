@@ -1,55 +1,26 @@
 <!DOCTYPE html>
 <style>
-  body { color: lightgray; }
+  body { color: white; }
   svg { background-color: #111; }
   .hline { stroke: lightgray; }
   .vline { stroke: lightgray; }
   .cell { fill: steelblue; opacity: 0.75; }
   .info text { font-family: monospace; }
-  .emoji { font-size: 35px; }
-  .hflex { display: flex; flex-direction: row; padding: 4px; }
+  .emoji { font-size: 45px; }
+  .hflex { display: flex; flex-direction: row; }
 </style>
 <body>
 </body>
 <script src="js/d3/d3.min.js"></script>
 <script>
-  const emojis = ['😱', '😈', '🤠'];
   const margin = {l: 15, r: 10, t: 15, b: 10};
-  const w = 400, h = 400;
+  const w = 450, h = 450;
   const l = margin.l, r = w - margin.r, t = margin.t, b = h - margin.b;
-
-  function hflex(label) {
-    const ret = d3.select('body').append('div').attr('class', 'hflex')
-    if (label) {
-      ret.append('span').text(label).style('width', '5em');
-    }
-    return ret;
-  }
-
-  const svg = hflex().style('justify-content', 'center')
-    .append('svg')
-      .attr('width', w + margin.l + margin.r)
-      .attr('height', h + margin.t + margin.b)
+  const svg = d3.select('body').append('svg')
+    .attr('width', w + margin.l + margin.r)
+    .attr('height', h + margin.t + margin.b)
   const g = svg.append('g')
     .attr('transform', `translate(${margin.l}, ${margin.t})`);
-
-  const gridEl = hflex(`grid:`).append('span');
-
-  const maxSteps = 8 * 8 - 1;
-  let step = 0;
-  const emoji = [];
-
-  const get = (x, y) => {
-    if (x >= 8) {
-      ++y;
-      x -= 8;
-    }
-    if (y >= 0 && y < 8) {
-      return {x, y, e:emoji[y * 8 + x]};
-    }
-    return {x, y, e:''};
-  };
-  const getPos = i => get(i % 8, Math.floor(i / 8));
 
   const ticks = (scale, n) => {
     const d = scale.domain();
@@ -126,38 +97,41 @@
         .attr('x', d => this.xAxis(d.x + 0.5))
         .attr('y', d => this.yAxis(d.y))
         .attr('dy', '-0.2em')
-        .attr('fill', d => d.color)
         .text(d => d.text);
-
     }
   };
 
-  const grid = new Grid(l, t, 8, 8, w - margin.r, h - margin.b, 8, 8);
+  let step = 0;
+  const emoji = [];
 
-  function gridString(hilite) {
-    const color = 'steelblue';
-    let gb = '';
-    for (let y = 0; y < 8; ++y) {
-      for (let x = 0; x < 8; ++x) {
-        let text = emojis.indexOf(emoji[y*8+x]) + 1;
-        let fcolor = text != '0' ? 'yellow' : 'white';
-        if (x == hilite.x && y == hilite.y) {
-          gb += `<span style="background-color:${color};color:${fcolor}">${text}</span>`;
-        } else {
-          gb += `<span style="color:${fcolor}">${text}</span>`;
-        }
-      }
+  const grid = new Grid(l, t, 8, 8, w - margin.r, h - margin.b, 8, 8);
+  const get = (x, y) => { return {x, y, e:emoji[y * 8 + x]}; };
+  const get3h = (x, y) => [get(x, y), get(x + 1, y), get(x + 2, y)];
+  const get3v = (x, y) => [get(x, y), get(x, y + 1), get(x, y + 2)];
+  const matched = e => e[0].e && e[0].e == e[1].e && e[1].e == e[2].e;
+
+  const getPos = i => {
+    let x, y;
+    if (i < 6 * 8) {  // horizontal
+      x = i % 6;
+      y = Math.floor(i / 6);
+      return get3h(x, y);
+    } else {  // vertical
+      i -= 6 * 8;
+      x = i % 8;
+      y = Math.floor(i / 8);
+      return get3v(x, y);
     }
-    return gb;
-  }
+  };
 
   function update() {
     grid.cellData.length = 0;
-    const cell = getPos(step);
-    const color = 'steelblue';
-    grid.cellData.push({...cell, w:1, h:1, color});
+    const cells = getPos(step);
+    const color = matched(cells) ? 'lime' : 'steelblue';
+    grid.cellData.push({...cells[0], w:1, h:1, color});
+    grid.cellData.push({...cells[1], w:1, h:1, color});
+    grid.cellData.push({...cells[2], w:1, h:1, color});
     grid.update();
-    gridEl.html(gridString(cell));
   }
 
   function randomize() {
@@ -165,30 +139,24 @@
     grid.emojiData.length = 0;
     for (let y = 0; y < 8; ++y) {
       for (let x = 0; x < 8; ++x) {
-        const p = Math.random();
-        let text = '';
-        const band = 1 / (emojis.length + 1);
-        for (let i = 0; i < emojis.length; ++i) {
-          if (p < (i + 1) * band) {
-            text = emojis[i];
-            break;
-          }
+        if (Math.random() < 0.5) {
+          grid.emojiData.push({x, y, text: '😀'});
+          emoji.push('😀');
+        } else {
+          emoji.push('');
         }
-
-        if (text) {
-          grid.emojiData.push({x, y, text, color:'white'});
-        }
-        emoji.push(text);
       }
     }
     update();
   };
   randomize();
 
-  function range(target, name, value, min, max, f) {
-    return target
+  function range(name, value, min, max, f) {
+    return d3.select('body')
+      .append('div').attr('class', 'hflex')
+      .call(e => e.append('span').text(`${name}:`))
       .append('input')
-      .style('flex-grow', '1')
+      .style('width', `100%`)
       .attr('type', 'range')
       .attr('min', min)
       .attr('max', max)
@@ -196,31 +164,8 @@
       .on('input change', e => { f(+e.target.value); update(); });
   }
 
-  function button(target, name, f) {
-    return target.append('button').text(name).on('click', f);
-  }
-
-  function radio(target, name, values, f) {
-    let checked = true;
-
-    for (let id of values) {
-      const input = target.append('input')
-        .attr('type', 'radio')
-        .attr('id', id)
-        .attr('name', name)
-        .on('click', f);
-      target.append('label')
-        .attr('for', id)
-        .text(id);
-
-      if (checked) {
-        input.attr('checked', '');
-        checked = false;
-      }
-    }
-  }
-
-  let steps;
+  const maxSteps = 6 * 8 * 2 - 1;
+  const steps = range('step', step, 0, maxSteps, v => {step = v;});
 
   const setStep = n => {
     step = Math.max(0, Math.min(n, maxSteps));
@@ -230,30 +175,20 @@
 
   const prev = () => { setStep(step - 1); }
   const next = () => { setStep(step + 1); }
-
-  const doDisplay = e => {
-    grid.emojiData.length = 0;
-    for (let i = 0; i < 64; ++i) {
-      let text, color;
-      switch (e.target.id) {
-        case 'emoji':
-          text = emoji[i];
-          color = 'white';
-          break;
-        case 'value':
-          text = emojis.indexOf(emoji[i]) + 1;
-          color = text != '0' ? 'yellow' : 'white';
-          break;
-      }
-      grid.emojiData.push({x:i % 8, y: Math.floor(i / 8), text, color});
+  const nextMatch = () => {
+    let newStep = step;
+    for (let i = 0; i < maxSteps; ++i) {
+      newStep = (newStep + 1) % (6 * 8 * 2);
+      if (matched(getPos(newStep))) break;
     }
-    update();
+    setStep(newStep);
   };
 
-  const brow = hflex('index:');
-  button(brow, 'prev', prev);
-  button(brow, 'next', next);
-  button(brow, 'random', randomize);
-  steps = range(brow, 'step', step, 0, maxSteps, v => {step = v;});
-  radio(hflex('display:'), 'display', ['emoji', 'value'], doDisplay);
+  d3.select('body')
+    .append('div').attr('class', 'hflex')
+    .call(e => e.append('button').text('prev').on('click', prev))
+    .call(e => e.append('button').text('next').on('click', next))
+    .call(e => e.append('button').text('next match').on('click', nextMatch))
+    .call(e => e.append('button').text('random').on('click', randomize))
+
 </script>

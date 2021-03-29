@@ -13,7 +13,6 @@
 </body>
 <script src="js/d3/d3.min.js"></script>
 <script>
-  const emojis = ['😱', '😈', '🤠'];
   const margin = {l: 15, r: 10, t: 15, b: 10};
   const w = 350, h = 350;
   const l = margin.l, r = w - margin.r, t = margin.t, b = h - margin.b;
@@ -33,26 +32,55 @@
   const g = svg.append('g')
     .attr('transform', `translate(${margin.l}, ${margin.t})`);
 
-  let gridBits = [];
-  for (let e of emojis) {
-    gridBits.push(hflex(`grid${e}:`).append('span'));
-  }
+  const gridBits = hflex('grid:').append('span');
+  const patternBits = hflex('pattern:').append('span');
+  const validBits = hflex('valid:').append('span');
+
+  const patterns = {
+    h0: [{x: 0, y: 0}, {x: 1, y: 0}, {x: 2, y: 0}],
+    v0: [{x: 0, y: 0}, {x: 0, y: 1}, {x: 0, y: 2}],
+
+    h1: [{x: 0, y: 1}, {x: 1, y: 0}, {x: 2, y: 0}],
+    h2: [{x: 0, y: 0}, {x: 1, y: 1}, {x: 2, y: 0}],
+    h3: [{x: 0, y: 0}, {x: 1, y: 0}, {x: 2, y: 1}],
+    h4: [{x: 0, y: 0}, {x: 1, y: 1}, {x: 2, y: 1}],
+    h5: [{x: 0, y: 1}, {x: 1, y: 0}, {x: 2, y: 1}],
+    h6: [{x: 0, y: 1}, {x: 1, y: 1}, {x: 2, y: 0}],
+    h7: [{x: 0, y: 0}, {x: 1, y: 0}, {x: 3, y: 0}],
+    h8: [{x: 0, y: 0}, {x: 2, y: 0}, {x: 3, y: 0}],
+
+    v1: [{y: 0, x: 1}, {y: 1, x: 0}, {y: 2, x: 0}],
+    v2: [{y: 0, x: 0}, {y: 1, x: 1}, {y: 2, x: 0}],
+    v3: [{y: 0, x: 0}, {y: 1, x: 0}, {y: 2, x: 1}],
+    v4: [{y: 0, x: 0}, {y: 1, x: 1}, {y: 2, x: 1}],
+    v5: [{y: 0, x: 1}, {y: 1, x: 0}, {y: 2, x: 1}],
+    v6: [{y: 0, x: 1}, {y: 1, x: 1}, {y: 2, x: 0}],
+    v7: [{y: 0, x: 0}, {y: 1, x: 0}, {y: 3, x: 0}],
+    v8: [{y: 0, x: 0}, {y: 2, x: 0}, {y: 3, x: 0}],
+  };
 
   const maxSteps = 8 * 8 - 1;
   let step = 0;
+  let pattern = patterns.h0;
   const emoji = [];
 
   const get = (x, y) => {
+    const isValid = x < 8 && y < 8;
     if (x >= 8) {
       ++y;
       x -= 8;
     }
-    if (y >= 0 && y < 8) {
-      return {x, y, e:emoji[y * 8 + x]};
+    if (isValid) {
+      return {x, y, e:emoji[y * 8 + x], isValid:true};
     }
-    return {x, y, e:''};
+    return {x, y, e:'', isValid:false};
   };
-  const getPos = i => get(i % 8, Math.floor(i / 8));
+  const get3 = (x, y) => [get(x + pattern[0].x, y + pattern[0].y),
+                          get(x + pattern[1].x, y + pattern[1].y),
+                          get(x + pattern[2].x, y + pattern[2].y)];
+  const matched = e => e[0].e && e[0].e == e[1].e && e[1].e == e[2].e;
+  const isValid = e => e[0].isValid && e[1].isValid && e[2].isValid;
+  const getPos = i => get3(i % 8, Math.floor(i / 8));
 
   const ticks = (scale, n) => {
     const d = scale.domain();
@@ -137,38 +165,62 @@
 
   const grid = new Grid(l, t, 8, 8, w - margin.r, h - margin.b, 8, 8);
 
-  function gridString(emoji, hilite) {
-    const color = 'steelblue';
+  function digit(text, color, bgcolor) {
+    let s = '<span ';
+    if (color || bgcolor) {
+      s += 'style="';
+      if (color) s += `color:${color};`;
+      if (bgcolor) s += `background-color:${bgcolor};`;
+      s += '"';
+    }
+    s += `>${text}</span>`;
+    return s;
+  }
+
+  function update() {
+    grid.cellData.length = 0;
+    const cells = getPos(step);
+    const color = matched(cells) ? 'green' : 'steelblue';
+    grid.cellData.push({...cells[0], w:1, h:1, color});
+    grid.cellData.push({...cells[1], w:1, h:1, color});
+    grid.cellData.push({...cells[2], w:1, h:1, color});
+    grid.update();
+
     let gb = '';
+    let pb = '';
+    let vb = '';
     for (let y = 0; y < 8; ++y) {
       for (let x = 0; x < 8; ++x) {
         let text, fcolor;
-        if (get(x, y).e === emoji) {
+        if (get(x, y).e !== '') {
           text = '1';
           fcolor = 'yellow'
         } else {
           text = '0';
           fcolor = 'lightgray'
         }
-        if (x == hilite.x && y == hilite.y) {
-          gb = `<span style="background-color:${color};color:${fcolor}">${text}</span>` + gb;
+        if ((x == cells[0].x && y == cells[0].y) ||
+            (x == cells[1].x && y == cells[1].y) ||
+            (x == cells[2].x && y == cells[2].y)) {
+          gb = digit(text, fcolor, color) + gb;
+          pb = digit('1', 'yellow') + pb;
         } else {
-          gb = `<span style="color:${fcolor}">${text}</span>` + gb;
+          gb = digit(text, fcolor) + gb;
+          pb = digit('0', 'lightgray') + pb;
+        }
+
+        const bgcolor = y * 8 + x == step ? 'steelblue' : undefined;
+        const pos3 = get3(x, y);
+        if (isValid(pos3)) {
+          vb = digit('1', 'yellow', bgcolor) + vb;
+        } else {
+          vb = digit('0', 'lightgray', bgcolor) + vb;
         }
       }
     }
-    return gb;
-  }
-
-  function update() {
-    grid.cellData.length = 0;
-    const cell = getPos(step);
-    const color = 'steelblue';
-    grid.cellData.push({...cell, w:1, h:1, color});
-    grid.update();
-    for (let i = 0; i < emojis.length; ++i) {
-      gridBits[i].html(gridString(emojis[i], cell));
-    }
+    gridBits.html(gb);
+    patternBits.html(pb);
+    validBits.html(vb);
   }
 
   function randomize() {
@@ -176,20 +228,12 @@
     grid.emojiData.length = 0;
     for (let y = 0; y < 8; ++y) {
       for (let x = 0; x < 8; ++x) {
-        const p = Math.random();
-        let text = '';
-        const band = 1 / (emojis.length + 1);
-        for (let i = 0; i < emojis.length; ++i) {
-          if (p < (i + 1) * band) {
-            text = emojis[i];
-            break;
-          }
+        if (Math.random() < 0.4) {
+          grid.emojiData.push({x, y, text: '😀', color:'white'});
+          emoji.push('😀');
+        } else {
+          emoji.push('');
         }
-
-        if (text) {
-          grid.emojiData.push({x, y, text, color:'white'});
-        }
-        emoji.push(text);
       }
     }
     update();
@@ -241,6 +285,19 @@
 
   const prev = () => { setStep(step - 1); }
   const next = () => { setStep(step + 1); }
+  const nextMatch = () => {
+    let newStep = step;
+    for (let i = 0; i < maxSteps; ++i) {
+      newStep = (newStep + 1) % maxSteps;
+      if (matched(getPos(newStep))) break;
+    }
+    setStep(newStep);
+  };
+
+  const doPattern = e => {
+    pattern = patterns[e.target.id];
+    update();
+  };
 
   const doDisplay = e => {
     grid.emojiData.length = 0;
@@ -256,8 +313,8 @@
           color = emoji[i] !== '' ? 'yellow' : 'white';
           break;
         case 'value':
-          text = emojis.indexOf(emoji[i]) + 1;
-          color = text != '0' ? 'yellow' : 'white';
+          text = emoji[i] !== '' ? '1' : '0';
+          color = emoji[i] !== '' ? 'yellow' : 'white';
           break;
       }
       grid.emojiData.push({x:i % 8, y: Math.floor(i / 8), text, color});
@@ -265,10 +322,15 @@
     update();
   };
 
-  const brow = hflex('index:');
+  const brow = hflex('step:');
   button(brow, 'prev', prev);
   button(brow, 'next', next);
+  button(brow, 'next match', nextMatch);
   button(brow, 'random', randomize);
   steps = range(brow, 'step', step, 0, maxSteps, v => {step = v;});
+  radio(hflex('Vpattern:'), 'pattern',
+      ['v0', 'v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8'], doPattern);
+  radio(hflex('Hpattern:'), 'pattern',
+      ['h0', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'h7', 'h8'], doPattern);
   radio(hflex('display:'), 'display', ['emoji', 'index', 'value'], doDisplay);
 </script>

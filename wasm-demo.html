@@ -43,7 +43,7 @@
 
     (async function start() {
       const wasm = params.get('wasm');
-      const response = await fetch(`${wasm}.wasm`);
+      const response = await fetch(`steps/${wasm}.wasm`);
       const moduleBytes = await response.arrayBuffer();
       const {module, instance} = await WebAssembly.instantiate(moduleBytes, {Math});
       const exports = instance.exports;
