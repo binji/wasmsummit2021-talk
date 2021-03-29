@@ -790,17 +790,20 @@
   Step 25: Checking for matches
 
   <section>
-    To check for a match:
-    <ol>
-      <li>We can use an i64 for the matched set</li>
-      <li>Use <code>i64.and</code> to check if all 3 match</li>
-      <li>Use <code>i64.or</code> to add elements to the set</li>
-    </ol>
+    <div class="fig-container" data-file="step25-match.html"
+      data-style="margin-top:100px width:750px height:650px"></div>
   </section>
 
   <section>
-    <div class="fig-container" data-file="step25-match.html"
-      data-style="margin-top:100px width:750px height:650px"></div>
+    <ol>
+      <li>Initialize the result to i64 0</li>
+      <li>Create a bit pattern to match against</li>
+      <li>Go to the next pattern if this pattern is not valid</li>
+      <li>Use <code>i64.and</code> to check if all 3 match</li>
+      <li>If the pattern matches, use <code>i64.or</code> to add it to the
+        result</li>
+      <li>Shift the pattern left 1, and go to step 3</li>
+    </ol>
   </section>
 
   <section>
@@ -840,6 +843,39 @@
 
 <section>
   Step 27: Move Emojis Down After Swap
+
+  <section>
+    <ol>
+      <li>Start from the bottom and work up</li>
+      <li>For each empty cell, find the first non-empty above it, if any</li>
+      <li>If found, then swap the two cells</li>
+    </ol>
+  </section>
+
+  <section>
+    <div class="fig-container" data-file="step27-movedown.html"
+      data-style="margin-top:100px width:750px height:650px"></div>
+  </section>
+
+  <section>
+  <pre><code class="lang-clojure" data-trim data-line-numbers="1-2|3-9|8|9|10-11|12-15">
+    ;; Get the index of the lowest set bit
+    (local.set $i (i64.ctz (local.get $empty)))
+    ;; Find the next cell above that is not empty:
+    ;; invert the empty pattern and mask it with a column,
+    ;; shifted by i.
+    (local.set $above-bits
+      (i64.and
+        (i64.xor (local.get $empty) (i64.const -1))
+        (i64.shl (i64.const 0x0101010101010101) (local.get $i))))
+    ;; Now find the lowest set bit
+    (local.set $above-idx (i64.ctz (local.get $above-bits)))
+    ;; If there is a cell above this one...
+    (if (i64.ne (local.get $above-bits) (i64.const 0))
+      (then
+        ;; Move the cell above down...
+  </code></pre>
+  </section>
 
   <section>
     <div class="fig-container" data-file="wasm-demo.html?wasm=step27&cursor&bg"

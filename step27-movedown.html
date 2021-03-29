@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<style>
+  body { color: lightgray; }
+  svg { background-color: #111; }
+  .hline { stroke: lightgray; }
+  .vline { stroke: lightgray; }
+  .cell { fill: steelblue; opacity: 0.75; }
+  .info text { font-family: monospace; }
+  .emoji { font-size: 35px; }
+  .hflex { display: flex; flex-direction: row; padding: 4px; }
+</style>
+<body>
+</body>
+<script src="js/d3/d3.min.js"></script>
+<script>
+  const emojis = ['😱', '😈', '🤠'];
+  const margin = {l: 15, r: 10, t: 15, b: 10};
+  const w = 350, h = 350;
+  const l = margin.l, r = w - margin.r, t = margin.t, b = h - margin.b;
+
+  function hflex(label) {
+    const ret = d3.select('body').append('div').attr('class', 'hflex')
+    if (label) {
+      ret.append('span').text(label).style('width', '5em');
+    }
+    return ret;
+  }
+
+  const svg = hflex().style('justify-content', 'center')
+    .append('svg')
+      .attr('width', w + margin.l + margin.r)
+      .attr('height', h + margin.t + margin.b)
+  const g = svg.append('g')
+    .attr('transform', `translate(${margin.l}, ${margin.t})`);
+
+  const emptyBits = hflex('empty:').append('span');
+  const searchBits = hflex('search:').append('span');
+
+  let maxSteps = 0;
+  let step = 0;
+  const emoji = [];
+
+  const get = (x, y) => {
+    const isValid = x < 8 && y < 8;
+    if (isValid) {
+      return {x, y, e:emoji[y * 8 + x]};
+    }
+    return {x, y, e:''};
+  };
+  const getPos = i => get(i % 8, Math.floor(i / 8));
+
+  const ticks = (scale, n) => {
+    const d = scale.domain();
+    const offset = 0.49;
+    const a = [];
+    for (let i = 0; i < n - 1; ++i) {
+      a.push(Math.floor(i * Math.abs(d[1] - d[0]) / (n - 1)) + offset);
+    }
+    a.push(Math.max(d[0], d[1]) - 1 + offset);
+    return a;
+  };
+
+  class Grid {
+    constructor(x, y, dw, dh, rw, rh, tx, ty) {
+      this.dw = dw;
+      this.dh = dh;
+      this.xAxis = d3.scaleLinear().domain([0, dw]).range([0, rw]);
+      this.yAxis = d3.scaleLinear().domain([dh, 0]).range([0, rh]);
+
+      this.grid = g.append('g')
+        .attr('transform', `translate(${x}, ${y})`);
+
+      // top axis
+      this.grid.append('g')
+        .call(d3.axisTop(this.xAxis)
+                .tickValues(ticks(this.xAxis, tx))
+                .tickSizeOuter(0))
+
+      // left axis
+      this.grid.append('g')
+        .call(d3.axisLeft(this.yAxis)
+                .tickValues(ticks(this.yAxis, ty))
+                .tickSizeOuter(0));
+
+      this.vData = Array.from({length: dw + 1}, (_,i) => i);
+      this.hData = Array.from({length: dh + 1}, (_,i) => i);
+      this.cellData = [];
+      this.emojiData = [];
+
+      this.hlines = this.grid.append('g').attr('class', 'hline');
+      this.vlines = this.grid.append('g').attr('class', 'vline');
+      this.cells = this.grid.append('g').attr('class', 'cell')
+      this.emoji = this.grid.append('g').attr('class', 'emoji');
+
+      this.update();
+    }
+
+    update() {
+      this.hlines.selectAll('line')
+        .data(this.hData)
+        .join('line')
+        .attr('x1', this.xAxis(0)).attr('y1', d => this.yAxis(d))
+        .attr('x2', this.xAxis(this.dw)).attr('y2', d => this.yAxis(d));
+
+      this.vlines.selectAll('line')
+        .data(this.vData)
+        .join('line')
+        .attr('y1', this.yAxis(0)).attr('x1', d => this.xAxis(d))
+        .attr('y2', this.yAxis(this.dh)).attr('x2', d => this.xAxis(d));
+
+      this.cells.selectAll('rect')
+        .data(this.cellData)
+        .join('rect')
+        .attr('width', d => this.xAxis(d.w) - this.xAxis(0))
+        .attr('height', d => this.yAxis(0) - this.yAxis(d.h))
+        .attr('x', d => this.xAxis(d.x))
+        .attr('y', d => this.yAxis(d.y + 1))
+        .attr('fill', d => d.color);
+
+      this.transition = svg.transition().duration(250);
+
+      this.emoji.selectAll('text')
+        .data(this.emojiData, d => d.i.toString())
+        .join(
+           enter => {
+             return enter.append('text')
+               .attr('text-anchor', 'middle')
+               .attr('dy', '-0.2em')
+               .attr('fill', d => d.color)
+               .attr('x', d => this.xAxis(d.x + 0.5))
+               .attr('y', d => this.yAxis(d.y))
+               .text(d => d.text);
+           },
+           update => update.call(e => {
+             e.transition(this.transition)
+              .attr('x', d => this.xAxis(d.x + 0.5))
+              .attr('y', d => this.yAxis(d.y));
+           })
+        );
+    }
+  };
+
+  const grid = new Grid(l, t, 8, 8, w - margin.r, h - margin.b, 8, 8);
+
+  function digit(text, color, bgcolor) {
+    let s = '<span ';
+    if (color || bgcolor) {
+      s += 'style="';
+      if (color) s += `color:${color};`;
+      if (bgcolor) s += `background-color:${bgcolor};`;
+      s += '"';
+    }
+    s += `>${text}</span>`;
+    return s;
+  }
+
+  function gridToString(arr) {
+    arr.reverse();
+    return Array.from(arr, x => digit(x.text, x.color, x.bgcolor)).join('');
+  }
+
+  function update() {
+    grid.cellData.length = 0;
+    grid.emojiData.length = 0;
+
+    let moved = Array.from({length:64}, () => false);
+    let count = step;
+
+    let eb = Array.from({length:64}, () => { return {text:'1', color:'yellow'}; });
+    let sb = Array.from({length:64}, () => { return {text:'0', color:'lightgray'}; });
+    let i;
+    for (i = 0; i < 64; ++i) {
+      const cell = getPos(i);
+      if (emoji[i] != '' && !moved[i]) {
+        grid.emojiData.push({i, x: cell.x, y: cell.y, text: cell.e, color:'white'});
+        eb[i].text = '0';
+        eb[i].color = 'lightgray';
+        continue;
+      }
+
+      let text = '0', fcolor = 'lightgray';
+
+      if (count-- > -1) {
+        let found = false;
+        let foundI;
+        let y = cell.y;
+        for (let iy = i; iy < 64; iy += 8, y++) {
+          if (!found && emoji[iy] != '' && !moved[iy]) {
+            foundI = iy;
+            found = true;
+            if (count >= 0) {
+              moved[iy] = true;
+            } else {
+              grid.cellData.push({...cell, y, w:1, h:1, color:'green'});
+              eb[iy].bgcolor = 'green';
+              sb[iy] = {text:'1', color:'yellow'};
+            }
+          } else if (count == -1) {
+            grid.cellData.push({...cell, y, w:1, h:1, color:'steelblue'});
+            eb[iy].bgcolor = 'steelblue';
+            sb[iy] = {text:'1', color:'yellow'};
+          }
+        }
+        if (count >= 0) {
+          if (found) {
+            const foundCell = getPos(foundI);
+            grid.emojiData.push({i:foundI, x: cell.x, y: cell.y, text:foundCell.e, color:'white'});
+          }
+          eb[i].text = '0';
+          eb[i].fcolor = 'lightgray';
+        }
+        if (count == -1) {
+          eb[i].bgcolor = 'steelblue';
+        }
+      }
+    }
+
+    emptyBits.html(gridToString(eb));
+    searchBits.html(gridToString(sb));
+    grid.update();
+  }
+
+  function randomize() {
+    emoji.length = 0;
+    grid.emojiData.length = 0;
+    for (let y = 0; y < 8; ++y) {
+      for (let x = 0; x < 8; ++x) {
+        const p = Math.random();
+        let text = '';
+        const band = 1 / (emojis.length + 1);
+        for (let i = 0; i < emojis.length; ++i) {
+          if (p < (i + 1) * band) {
+            text = emojis[i];
+            break;
+          }
+        }
+
+        if (text) {
+          grid.emojiData.push({x, y, text, color:'white'});
+        }
+        emoji.push(text);
+      }
+    }
+
+    maxSteps = 0;
+    for (let x = 0; x < 8; ++x) {
+      for (let y = 0; y < 8; ++y) {
+        if (emoji[y * 8 + x] == '') {
+          maxSteps += 8 - y;
+          break;
+        }
+      }
+    }
+
+    steps.attr('max', maxSteps);
+    update();
+  };
+
+  function range(target, name, value, min, max, f) {
+    return target
+      .append('input')
+      .style('flex-grow', '1')
+      .attr('type', 'range')
+      .attr('min', min)
+      .attr('max', max)
+      .attr('value', value)
+      .on('input change', e => { f(+e.target.value); update(); });
+  }
+
+  function button(target, name, f) {
+    return target.append('button').text(name).on('click', f);
+  }
+
+  let steps;
+
+  const setStep = n => {
+    step = Math.max(0, Math.min(n, maxSteps));
+    steps.node().value = step;
+    update();
+  };
+
+  const prev = () => { setStep(step - 1); }
+  const next = () => { setStep(step + 1); }
+
+  const brow = hflex('step:');
+  button(brow, 'prev', prev);
+  button(brow, 'next', next);
+  button(brow, 'random', randomize);
+  steps = range(brow, 'step', step, 0, maxSteps, v => {step = v;});
+
+  randomize();
+</script>
