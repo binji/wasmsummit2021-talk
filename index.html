@@ -105,7 +105,7 @@
   Step 1: HTML, JS
 
   <section>
-    <pre><code data-trim>
+    <pre><code data-line-numbers="3-4|6-9" data-trim data-fragment-index="0">
     body {
       position: absolute;
       display: flex;
@@ -116,11 +116,19 @@
       height: 100%;
     }
     </code></pre>
-    The body is a flexbox that fills the screen
+
+    <div class="r-stack">
+      <span class="fragment fade-out" data-fragment-index="0">
+        Body is a flexbox
+      </span>
+      <span class="fragment fade-in" data-fragment-index="0">
+        That fills the screen
+      </span>
+    </div>
   </section>
 
   <section>
-    <pre><code data-trim>
+    <pre><code data-line-numbers="2|5-6" data-trim data-fragment-index="0">
     canvas {
       object-fit: contain;
       width: 100%;
@@ -129,8 +137,15 @@
       image-rendering: crisp-edges;
     }
     </code></pre>
-    The canvas is pixelated, fills the screen, but with the correct
-    aspect ratio.
+
+    <div class="r-stack">
+      <span class="fragment fade-out" data-fragment-index="0">
+        Maintain aspect ratio
+      </span>
+      <span class="fragment fade-in" data-fragment-index="0">
+        And keep pixels pixelated!
+      </span>
+    </div>
   </section>
 
   <section>
@@ -150,7 +165,7 @@
   Step 2: Loading Wasm
 
   <section>
-    <pre><code data-trim>
+    <pre><code data-trim data-line-numbers="4-5|6-7|8-9|10" data-fragment-index="0">
     const w = 150, h = 150;
 
     (async function start() {
@@ -159,14 +174,26 @@
       const {module, instance} =
         await WebAssembly.instantiate(moduleBytes);
       const exports = instance.exports;
-      const canvasData =
-        new Uint8Array(exports.mem.buffer, 0x10000, w*h*4);
+      const buffer = exports.mem.buffer;
+      const canvasData = new Uint8Array(buffer, 0x10000, w*h*4);
 
       // ...
     </code></pre>
-    Fetch and instantiate the wasm module,<br>
-    then create a Uint8Array view <br>
-    at 0x10000 of 150*150*4 bytes.
+
+    <div class="r-stack">
+      <span class="fragment fade-out" data-fragment-index="0">
+        Fetch the Wasm module
+      </span>
+      <span class="fragment fade-in-then-out" data-fragment-index="0">
+        And instantiate it
+      </span>
+      <span class="fragment fade-in-then-out" data-fragment-index="1">
+        Extract the exports, one of which is a <b>WebAssembly.Memory</b> object
+      </span>
+      <span class="fragment fade-in" data-fragment-index="2">
+        Create a 150*150*4 byte view of Wasm memory to use for canvas data
+      </span>
+    </div>
   </section>
 
   <section>
@@ -175,7 +202,7 @@
   </section>
 
   <section>
-    <pre><code class="lang-js" data-trim>
+    <pre><code class="lang-js" data-trim data-line-numbers="2-3|4|6-11|8|9-10" data-fragment-index="0">
       // ...
       const canvas = document.querySelector('canvas');
       const context = canvas.getContext('2d');
@@ -189,23 +216,50 @@
       })();
     })();
     </code></pre>
-    Create the Canvas2D context and 150x150 ImageData.<br>
-    For each frame, execute <code>run</code> and draw the graphics data
-    in wasm memory.
+
+    <div class="r-stack">
+      <span class="fragment fade-out" data-fragment-index="0">
+        Create a <b>CanvasRenderingContext2D</b>
+      </span>
+      <span class="fragment fade-in-then-out" data-fragment-index="0" >
+        Create an <b>ImageData</b> object to blit into the <b>Canvas</b>
+      </span>
+      <span class="fragment fade-in-then-out" data-fragment-index="1" >
+        Create an update function that is called 60 FPS* by
+        <b>requestAnimationFrame</b>
+      </span>
+      <span class="fragment fade-in-then-out" data-fragment-index="2" >
+        Run the per-frame Wasm function
+      </span>
+      <span class="fragment fade-in" data-fragment-index="3" >
+        Copy the Wasm memory to the <b>ImageData</b>, and draw it to the
+        <b>Canvas</b>
+      </span>
+    </div>
   </section>
 
   <section>
-    <pre><code data-trim>
+    <pre><code class="lang-clojure" data-trim data-line-numbers="1-3|4|6-7" data-fragment-index="0">
     ;; Memory map:
     ;;
-    ;; [0x10000 .. 0x25f90]  150x150xRGBA data (4 bytes/pixel)
+    ;; [0x10000 .. 0x25f90)  150x150xRGBA data (4 bytes/pixel)
     (memory (export "mem") 3)
 
     (func (export "run")
     )
     </code></pre>
-    The wasm module exports memory of 3 pages (192KiB)
-    and an empty <code>run</code> function.
+
+    <div class="r-stack">
+      <span class="fragment fade-out" data-fragment-index="0">
+        Add a comment to the top, describing the memory layout
+      </span>
+      <span class="fragment fade-in-then-out" data-fragment-index="0">
+        Create and export a <b>Memory</b> object of 64Ki * 3 = 192Ki bytes
+      </span>
+      <span class="fragment fade-in" data-fragment-index="1">
+        Create and export the per-frame function
+      </span>
+    </div>
   </section>
 </section>
 
@@ -214,7 +268,7 @@
   Step 3: Clearing the Screen
 
   <section>
-  <pre><code data-trim data-line-numbers="1|2|3,10-12|7-9|4-6">
+  <pre><code class="lang-clojure" data-trim data-line-numbers="1,14|2|3,10-12|4-6|7-9" data-fragment-index="0">
   (func $clear-screen (param $color i32)
     (local $i i32)
     (loop $loop
@@ -230,14 +284,31 @@
     )
   )
   </code></pre>
-  Loop through all pixels and set them to <code>color</code>
+
+  <div class="r-stack">
+    <span class="fragment fade-out" data-fragment-index="0">
+      Define function called <b>$clear-screen</b>, with one <b>i32</b> parameter
+    </span>
+    <span class="fragment fade-in-then-out" data-fragment-index="0">
+      Define an <b>i32</b> local variable
+    </span>
+    <span class="fragment fade-in-then-out" data-fragment-index="1">
+      Loop over all pixels, from 0 to 150*150*4 = 90000
+    </span>
+    <span class="fragment fade-in-then-out" data-fragment-index="2">
+      Write color to memory at (0x10000 + i)
+    </span>
+    <span class="fragment fade-in" data-fragment-index="3">
+      Increment address by 4
+    </span>
+  </div>
 
   <aside class="notes" data-markdown>
     1. function definition w/ params
     1. local variables
     1. loop structure
-    1. increment at end of loop
     1. store w/ offset
+    1. increment at end of loop
     </ol>
   </aside>
   </section>
@@ -249,7 +320,7 @@
       (i32.const 0xff_00_00_ff))  ;; ABGR format
   )
   </code></pre>
-  Clear the screen to red.
+  Clear the screen to <span style="color:red">red</span>
 
   <aside class="notes" data-markdown>
     1. **call** instruction
@@ -269,7 +340,7 @@
   Step 4: Drawing a Pixel
 
   <section>
-  <pre><code data-trim>
+  <pre><code class="lang-clojure" data-trim data-line-numbers="1-2,11|7|6-8|5-9|4-10" data-fragment-index="0">
   (func $put-pixel
     (param $x i32) (param $y i32) (param $color i32)
     ;; mem[0x10000 + (y * 150 + x) * 4] = color
@@ -282,7 +353,24 @@
       (local.get $color))
   )
   </code></pre>
-  Calculate the pixel address, and write the color.
+
+  <div class="r-stack">
+    <span class="fragment fade-out" data-fragment-index="0">
+      Define <b>$put-pixel</b> function with 3 <b>i32</b> params
+    </span>
+    <span class="fragment fade-in-then-out" data-fragment-index="0">
+      Multiply <b>$y</b> by 150
+    </span>
+    <span class="fragment fade-in-then-out" data-fragment-index="1">
+      Add <b>$x</b>
+    </span>
+    <span class="fragment fade-in-then-out" data-fragment-index="2">
+      Multiply the result by 4 (the size of each pixel)
+    </span>
+    <span class="fragment fade-in" data-fragment-index="3">
+      Write <b>$color</b> to this address (with a 0x10000 offset)
+    </span>
+  </div>
   </section>
 
   <section>
@@ -293,8 +381,14 @@
       (i32.const 0xff_00_00_ff))
   )
   </code></pre>
-  Draw a red pixel at <code>(100,100)</code>
+  Draw a <span style="color:red">red</span> pixel at <b>(100,100)</b>
   </section>
+
+  <section>
+    <div class="fig-container" data-file="wasm-demo.html?wasm=step4"
+      data-style="margin-top:100px width:550px height:550px"></div>
+  </section>
+
 
 </section>
 
@@ -302,9 +396,8 @@
   Step 5: Mouse Input
 
   <section>
-  <pre><code class="lang-js" data-trim>
-      const input =
-        new Uint8Array(exports.mem.buffer, 0x0000, 3);
+  <pre><code class="lang-js" data-trim data-line-numbers="1|5-7|3,8,10-12" data-fragment-index="0">
+      const input = new Uint8Array(exports.mem.buffer, 0x0000, 3);
 
       function mouseEventHandler(event) {
         // ...
@@ -317,29 +410,51 @@
       canvas.addEventListener('mousedown', mouseEventHandler);
       canvas.addEventListener('mouseup', mouseEventHandler);
   </code></pre>
-  Listen for mouse events and write the x, y and button state to Wasm
-  memory.
+
+  <div class="r-stack">
+    <span class="fragment fade-out" data-fragment-index="0">
+      Create a <b>Uint8Array</b> view of the first 3 bytes
+    </span>
+    <span class="fragment fade-in-then-out" data-fragment-index="0">
+      Write the mouse info into these bytes
+    </span>
+    <span class="fragment fade-in" data-fragment-index="1">
+      Add this handler for <b>mousemove</b>, <b>mousedown</b> and
+      <b>mouseup</b> events
+    </span>
+  </div>
   </section>
 
   <section>
-  <pre><code data-trim>
-  ;; [0x00000 .. 0x00000]  X mouse position
-  ;; [0x00001 .. 0x00001]  Y mouse position
-  ;; [0x00002 .. 0x00002]  mouse buttons
+  <pre><code class="lang-clojure" data-trim data-line-numbers="1-3|7-8,12|9-12" data-fragment-index="0">
+  ;; [0x0..0x0)  X mouse position
+  ;; [0x1..0x1)  Y mouse position
+  ;; [0x2..0x2)  mouse buttons
   (func (export "run")
     // ...
     (call $put-pixel
-      (i32.load8_u (i32.const 0))  ;; X
-      (i32.load8_u (i32.const 1))  ;; Y
+      (i32.load8_u (i32.const 0))    ;; X
+      (i32.load8_u (i32.const 1))    ;; Y
       (select
-        (i32.const 0xff_00_00_ff)  ;; Red
-        (i32.const 0xff_ff_00_00)  ;; Blue
-        (i32.load8_u (i32.const 2)))
+        (i32.const 0xff_00_00_ff)    ;; Red
+        (i32.const 0xff_ff_00_00)    ;; Blue
+        (i32.load8_u (i32.const 2))) ;; Buttons
     )
   )
   </code></pre>
-  Draw a pixel at the current mouse coordinates<br>
-  Red if the button is clicked, otherwise blue.
+
+  <div class="r-stack">
+    <span class="fragment fade-out" data-fragment-index="0">
+      Update the memory map
+    </span>
+    <span class="fragment fade-in-then-out" data-fragment-index="0">
+      Read the x, y, and buttons with <b>i32.load8_u</b>
+    </span>
+    <span class="fragment fade-in" data-fragment-index="1">
+      <b>select</b> either <span style="color:red">red</span> if a button is
+      pressed, <span style="color:blue">blue</span> otherwise
+    </span>
+  </div>
 
   <aside class="notes" data-markdown>
     1. **i32.load8_u**
@@ -359,58 +474,55 @@
   Step 6: Filling a Rectangle
 
   <section>
-  <pre><code data-trim>
+  <pre><code class="lang-js" data-trim data-line-numbers>
+  function fillRect(x, y, w, h, color) {
+    var i, j;
+    for (j = 0; j &lt; h; j++) {
+      for (i = 0; i &lt; w; i++) {
+        putPixel(x + i, y + j, color);
+      }
+    }
+  }
+  </code></pre>
+  How you might write <b>fillRect</b> in JavaScript
+  </section>
+
+  <section>
+  <pre><code class="lang-clojure" data-trim data-line-numbers="1-3|4|5,14-15|6-7,12-13|8-11" data-fragment-index="0">
   (func $fill-rect (param $x i32) (param $y i32)
                    (param $w i32) (param $h i32)
                    (param $color i32)
-    (local $i i32)
-    (local $j i32)
-    ;; for (j = 0; j &lt; h; j++)
-    (loop $y-loop
-      ;; ...
-      ;; j += 1
+    (local $i i32) (local $j i32)
+    (loop $y
+      (local.set $i (i32.const 0))
+      (loop $x
+        (call $put-pixel
+          (i32.add (local.get $x) (local.get $i))
+          (i32.add (local.get $y) (local.get $j))
+          (local.get $color))
+        (local.set $i (i32.add (local.get $i) (i32.const 1)))
+        (br_if $x (i32.lt_s (local.get $i) (local.get $w))))
       (local.set $j (i32.add (local.get $j) (i32.const 1)))
-      ;; loop if j &lt; h
-      (br_if $y-loop (i32.lt_s (local.get $j) (local.get $h)))
-    )
-  )
+      (br_if $y (i32.lt_s (local.get $j) (local.get $h)))))
   </code></pre>
-  Loop over the y pixels from <code>0</code> to <code>h</code>...
-  </section>
 
-  <section>
-  <pre><code class="lang-clojure" data-trim data-line-numbers="3-12">
-  (loop $y-loop
-
-    (local.set $i (i32.const 0))
-    ;; for (i = 0; i &lt; w; i++)
-    (loop $x-loop
-      ;; ...
-      ;; i += 1
-      (local.set $i (i32.add (local.get $i) (i32.const 1)))
-      ;; loop if i &lt; w
-      (br_if $x-loop
-        (i32.lt_s (local.get $i) (local.get $w)))
-    )
-
-  )
-  </code></pre>
-  Loop over all the x pixels from <code>0</code> to <code>w</code>...
-  </section>
-
-  <section>
-  <pre><code class="lang-clojure" data-trim data-line-numbers="3-7">
-  (loop $x-loop
-
-    ;; put-pixel(x + i, y + j, color)
-    (call $put-pixel
-      (i32.add (local.get $x) (local.get $i))
-      (i32.add (local.get $y) (local.get $j))
-      (local.get $color))
-
-  )
-  </code></pre>
-  And draw a pixel at <code>(x+i, y+j)</code>
+  <div class="r-stack">
+    <span class="fragment fade-out" data-fragment-index="0">
+      Define the <b>$fill-rect</b> function, with 5 <b>i32</b> parameters
+    </span>
+    <span class="fragment fade-in-then-out" data-fragment-index="0">
+      Initialize locals <b>i</b> and <b>j</b> to 0
+    </span>
+    <span class="fragment fade-in-then-out" data-fragment-index="1">
+      Loop <b>j</b> from 0 to <b>h</b>
+    </span>
+    <span class="fragment fade-in-then-out" data-fragment-index="2">
+      Loop <b>i</b> from 0 to <b>w</b>
+    </span>
+    <span class="fragment fade-in" data-fragment-index="3">
+      Put a pixel at <b>(x+i,y+j)</b>
+    </span>
+  </div>
   </section>
 
   <section>
@@ -431,12 +543,12 @@
     ;; ...
   )
   </code></pre>
-  Start with <code>$fill-rect</code>, but change the
-  <code>$color</code> parameter to <code>$src</code>
+  Start with <b>$fill-rect</b>, but change the
+  <b>$color</b> parameter to <b>$src</b>
   </section>
 
   <section>
-  <pre><code class="lang-clojure" data-trim data-line-numbers="2,6-13">
+  <pre><code class="lang-clojure" data-trim data-line-numbers="2,6-13|9-13|7-13|6" data-fragment-index="0">
   ;; ...
       ;; put-pixel(x + i, y + j, mem[src + (w * j + i) * 4])
       (call $put-pixel
@@ -452,12 +564,45 @@
               (i32.const 4)))))
   ;; ...
   </code></pre>
-  Read the color to draw from <code>$src</code>, offset by
-  <code>i</code> and <code>j</code>.
+
+  <div class="r-stack">
+    <span class="fragment fade-out" data-fragment-index="0">
+      Calculate the pixel color...
+    </span>
+    <span class="fragment fade-in-then-out" data-fragment-index="0">
+      Get memory offset <b>(w * j + i) * 4</b>
+    </span>
+    <span class="fragment fade-in-then-out" data-fragment-index="1">
+      Add <b>$src</b>
+    </span>
+    <span class="fragment fade-in" data-fragment-index="2">
+      Load <b>i32</b> color at this address
+    </span>
+  </div>
 
   <aside class="notes" data-markdown>
     1. **i32.load**
   </aside>
+  </section>
+
+  <section>
+  <pre><code class="lang-clojure" data-trim data-line-numbers="" data-fragment-index="0">
+  ;; Sprite Data  16x16x4 = 1024 bytes
+  (data (i32.const 0x100)
+    "\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00"
+    "\00\00\00\00\00\00\00\00\df\71\26\ff\df\71\26\ff"
+    "\df\71\26\ff\df\71\26\ff\00\00\00\00\00\00\00\00"
+    "\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00"
+    "\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00"
+    "\df\71\26\ff\df\71\26\ff\fb\f2\36\ff\fb\f2\36\ff"
+    "\fb\f2\36\ff\fb\f2\36\ff\df\71\26\ff\df\71\26\ff"
+    "\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00\00"
+    "\00\00\00\00\00\00\00\00\00\00\00\00\df\71\26\ff"
+    "\fb\f2\36\ff\fb\f2\36\ff\fb\f2\36\ff\fb\f2\36\ff"
+    "\fb\f2\36\ff\fb\f2\36\ff\fb\f2\36\ff\fb\f2\36\ff"
+    ...
+  )
+  </code></pre>
   </section>
 
   <section>
@@ -473,11 +618,12 @@
 
 
 <section>
-  Step 8-10: Masking and clipping pixels
+  Step 8-9: Masking and clipping pixels
 
   <section>
-  <pre><code class="lang-clojure" data-trim>
-  (func $put-pixel (param $x i32) (param $y i32) (param $color i32)
+  <pre><code class="lang-clojure" data-trim data-line-numbers="4|5-7" data-fragment-index="0">
+  (func $put-pixel (param $x i32) (param $y i32)
+                   (param $color i32)
     ;; return if the x/y coordinate is out of bounds
     (br_if 0
       (i32.or
@@ -486,7 +632,15 @@
     ...
   )
   </code></pre>
-  Don't draw pixels that have coordinates &gt; 150
+
+  <div class="r-stack">
+    <span class="fragment fade-out" data-fragment-index="0">
+      <b>br_if 0</b> at toplevel is like <b>if (...) return;</b>
+    </span>
+    <span class="fragment fade-in" data-fragment-index="0">
+      Check if <b>$x &gt;= 150 || $y &gt;= 150</b>
+    </span>
+  </div>
 
   <aside class="notes" data-markdown>
     1. br_if with 0 is conditional return
@@ -525,10 +679,21 @@
 
 
 <section>
+
+  <section>
+    <p>⏩ Step 10: Draw sprites with palette</p>
+    <div class="fig-container" data-file="wasm-demo.html?wasm=step10"
+      data-style="width:550px height:550px"></div>
+  </section>
+
+</section>
+
+
+<section>
   Step 11: Scaling sprites
 
   <section>
-  <pre><code class="lang-clojure" data-trim>
+  <pre><code class="lang-clojure" data-trim data-line-numbers="3|4|5-6|9-15" data-fragment-index="0">
   (func $draw-sprite (param $x i32) (param $y i32)
                      (param $src i32)
                      (param $sw i32) (param $sh i32)
@@ -545,7 +710,22 @@
       (f32.div (f32.convert_i32_s (local.get $sh))
                (f32.convert_i32_s (local.get $dh))))
   </code></pre>
-  Calculate scaling factors between source and destination.
+
+  <div class="r-stack">
+    <span class="fragment fade-out" data-fragment-index="0">
+      Rename <b>$w</b> to <b>$sw</b> and <b>$h</b> to <b>$sh</b> for the source
+      width and height
+    </span>
+    <span class="fragment fade-in-then-out" data-fragment-index="0">
+      Add <b>$dw</b> and <b>$dh</b> for destination width and height
+    </span>
+    <span class="fragment fade-in-then-out" data-fragment-index="1">
+      Define two <b>f32</b> floating-point locals
+    </span>
+    <span class="fragment fade-in" data-fragment-index="2">
+      Calculate scale factor, converting from <b>i32</b> to <b>f32</b>
+    </span>
+  </div>
 
   <aside class="notes" data-markdown>
     1. f32 values
@@ -571,7 +751,7 @@
                 (f32.mul (f32.convert_i32_s (local.get $i))
                          (local.get $dx)))))))
   </code></pre>
-  Use scale factors when reading source pixel.
+  Use scale factors when reading source pixel
 
   <aside class="notes" data-markdown>
     1. **f32.mul**
@@ -622,7 +802,7 @@
   </section>
 
   <section>
-    Using <b>1 bit per cell</b> makes some algorithms simpler (we'll see this
+    Using <b>1 bit per cell</b> makes some algorithms smaller (we'll see this
     later).
   </section>
 
@@ -634,34 +814,57 @@
   Step 12-13: Draw the Grid
 
   <section>
+    <ul>
+      <li>Initialize <b>$grid</b> with the 64-bit grid</li>
+      <li>If <b>$grid</b> == 0, then we're done</li>
+      <li>Find the index of the lowest bit set in <b>$grid</b></li>
+      <li>Draw an emoji at the index</li>
+      <li>Clear the lowest bit in <b>$grid</b>, goto step 2</li>
+    </ul>
+  </section>
+
+  <section>
     <div class="fig-container" data-file="step12-ctz.html"
       data-style="margin-top:100px width:750px height:650px"></div>
 
   <aside class="notes" data-markdown>
-    1. Find the index of the lowest bit set
-    1. If the index &gt;= 64, done
-    1. Draw a cell there
-    1. Clear the lowest bit
   </aside>
   </section>
 
   <section>
-  <pre><code class="lang-clojure" data-trim data-line-numbers="1-15|6-7|10-13">
-  (func $draw-grid (param $bits i64) (param $gfx-src i32)
+  <pre><code class="lang-clojure" data-trim data-line-numbers="1|4-5|6-7|10-13" data-fragment-index="0">
+  (func $draw-grid (param $grid i64) (param $gfx-src i32)
     (local $i i32)
     (loop $loop
-      ;; Exit the function if bits is zero
-      (br_if 1 (i64.eqz (local.get $bits)))
+      ;; Exit the function if $grid is zero
+      (br_if 1 (i64.eqz (local.get $grid)))
       ;; Get the index of the lowest set bit
-      (local.set $i (i32.wrap_i64 (i64.ctz (local.get $bits))))
+      (local.set $i (i32.wrap_i64 (i64.ctz (local.get $grid))))
       ;; Draw the cell at that index
       (call $draw-cell ...)
       ;; Clear the lowest set bit: bits &amp;= bits - 1
-      (local.set $bits
-        (i64.and (local.get $bits)
-                 (i64.sub (local.get $bits) (i64.const 1))))
+      (local.set $grid
+        (i64.and (local.get $grid)
+                 (i64.sub (local.get $grid) (i64.const 1))))
       (br $loop)))
   </code></pre>
+
+  <div class="r-stack">
+    <span class="fragment fade-out" data-fragment-index="0">
+      Define <b>$draw-grid</b>, with <b>$grid</b> and <b>$gfx-src</b>
+    </span>
+    <span class="fragment fade-in-then-out" data-fragment-index="0">
+      <b>br_if 1</b> here exits the function, past the <b>loop</b>.
+      <b>i64.eqz</b> checks if a value is <b>eq</b>ual to <b>z</b>ero
+    </span>
+    <span class="fragment fade-in-then-out" data-fragment-index="1">
+      <b>i64.ctz</b> is <b>c</b>ount <b>t</b>railing <b>z</b>eroes, which gets
+      the index of the lowest set bit<br><b>i32.wrap_i64</b> converts an <b>i64</b> to <b>i32</b>
+    </span>
+    <span class="fragment fade-in" data-fragment-index="2">
+      Clear the lowest set bit using the trick <b>b &amp; (b-1)</b>
+    </span>
+  </div>
 
   <aside class="notes" data-markdown>
     1. **i64.ctz**
@@ -693,7 +896,7 @@
 
   <section>
   <p>Linear interpolation</p>
-  <pre><code class="lang-clojure" data-trim>
+  <pre><code class="lang-clojure" data-trim data-line-numbers="1|2|3-10" data-fragment-index="0">
   (func $ilerp (param $a i32) (param $b i32) (param $t f32)
                (result i32)
     ;; return a + (b - a) * t
@@ -707,6 +910,19 @@
   )
   </code></pre>
 
+  <div class="r-stack">
+    <span class="fragment fade-out" data-fragment-index="0">
+      Define <b>$ilerp</b> function that interpolates between <b>$a</b> and
+      <b>$b</b> by the factor <b>$t</b>
+    </span>
+    <span class="fragment fade-in-then-out" data-fragment-index="0">
+      Return a value of type <b>i32</b>
+    </span>
+    <span class="fragment fade-in" data-fragment-index="1">
+      A function returns its last expression
+    </span>
+  </div>
+
   <aside class="notes" data-markdown>
     1. Returning a value by placing it at the end of the function
   </aside>
@@ -714,7 +930,7 @@
 
   <section>
   <p>Ease out cubic</p>
-  <pre><code class="lang-clojure" data-trim>
+  <pre><code class="lang-clojure" data-trim data-line-numbers="1-10|12-13" data-fragment-index="0">
   (func $ease-out-cubic (param $t f32) (result f32)
     ;; return t * (3 + t * (t - 3))
     (f32.mul
@@ -725,25 +941,63 @@
           (local.get $t)
           (f32.sub (local.get $t) (f32.const 3)))))
   )
+  ...
+  (call $ilerp (i32.const 10) (i32.const 30)
+               (call $ease-out-cubic (f32.const 0.5)))
   </code></pre>
+
+  <div class="r-stack">
+    <span class="fragment fade-out" data-fragment-index="0">
+      Define the <b>$ease-out-cubic</b> function
+    </span>
+    <span class="fragment fade-in" data-fragment-index="0">
+      Example: interpolate between 10 and 30, using <b>$ease-out-cubic</b>
+    </span>
+  </div>
 
   <aside class="notes" data-markdown>
   </aside>
   </section>
 
   <section>
-  <p>Ease out cubic</p>
-
-  <pre><code class="lang-clojure" data-trim>
-  ;; Memory map:
-  ;;
-  ;; [0x3200..0x3300]  current offset  {s8 x, s8 y, s8 w, s8 h}[64]
-  ;; [0x3300..0x3400]  start offset    {s8 x, s8 y, s8 w, s8 h}[64]
-  ;; [0x3400..0x3500]  end offset      {s8 x, s8 y, s8 w, s8 h}[64]
-  ;; [0x3500..0x3600]  time [0..1)     f32[64]
+  <pre><code class="lang-clojure" data-trim data-line-numbers="1|5,8|3,13|4,14|12-15|10" data-fragment-index="0">
+  ;; struct Cell { s8 x, y, w, h; };
+  ;; [0x3200..0x3300)  current offset  Cell[64]
+  ;; [0x3300..0x3400)  start offset    Cell[64]
+  ;; [0x3400..0x3500)  end offset      Cell[64]
+  ;; [0x3500..0x3600)  time [0..1)     f32[64]
+  ...
+  ;; t = t[i]
+  (local.set $t (f32.load offset=0x3500 (local.get $t-addr)))
+  ;; current[i] = ilerp(start[i], end[i], easeOutCubic(t))
+  (i32.store8 offset=0x3200
+    (local.get $i-addr)
+    (call $ilerp
+      (i32.load8_s offset=0x3300 (local.get $i-addr))
+      (i32.load8_s offset=0x3400 (local.get $i-addr))
+      (call $ease-out-cubic (local.get $t))))
   </code></pre>
-  Each cell has position and size offsets, animating from <i>start</i> to
-  <i>end</i>, using the time t.
+
+  <div class="r-stack">
+    <span class="fragment fade-out" data-fragment-index="0">
+      Data layout so each cell has an x, y, width, height offset
+    </span>
+    <span class="fragment fade-in-then-out" data-fragment-index="0">
+      Load the <b>$t</b> value for each cell from memory
+    </span>
+    <span class="fragment fade-in-then-out" data-fragment-index="1">
+      Load the starting x/y/w/h value<br>(depending on <b>$i-addr</b>)
+    </span>
+    <span class="fragment fade-in-then-out" data-fragment-index="2">
+      Load the ending x/y/w/h value
+    </span>
+    <span class="fragment fade-in-then-out" data-fragment-index="3">
+      Interpolate from start to end, using <b>$t</b>
+    </span>
+    <span class="fragment fade-in" data-fragment-index="4">
+      Store the interpolated value as the "current" value
+    </span>
+  </div>
 
   <aside class="notes" data-markdown>
   </aside>
@@ -790,6 +1044,11 @@
   Step 25: Checking for matches
 
   <section>
+    Remember when I said that using <b>1 bit per cell</b> makes some algorithms
+    smaller?
+  </section>
+
+  <section>
     <div class="fig-container" data-file="step25-match.html"
       data-style="margin-top:100px width:750px height:650px"></div>
   </section>
@@ -807,8 +1066,7 @@
   </section>
 
   <section>
-  <pre><code class="lang-clojure" data-trim>
-    ;; if ((valid &amp; 1) &amp;&amp; ((grid &amp; pattern) == pattern)) ...
+  <pre><code class="lang-clojure" data-trim data-line-numbers="2-3|4-6|8-9|11-12|14-15" data-fragment-index="0">
     (if (i32.and
           (i32.wrap_i64
             (i64.and (local.get $valid) (i64.const 1)))
@@ -816,10 +1074,33 @@
             (i64.and (local.get $grid) (local.get $pattern))
             (local.get $pattern)))
       (then
-        ;; result |= pattern
         (local.set $result
           (i64.or (local.get $result) (local.get $pattern)))))
+
+    (local.set $pattern
+      (i64.shl (local.get $pattern) (i64.const 1)))
+
+    (local.set $valid
+      (i64.shr_u (local.get $valid) (i64.const 1)))
   </code></pre>
+
+  <div class="r-stack">
+    <span class="fragment fade-out" data-fragment-index="0">
+      If <b>$valid &amp; 1</b> is non-zero...
+    </span>
+    <span class="fragment fade-in-then-out" data-fragment-index="0">
+      And <b>$grid &amp; $pattern == $pattern</b>...
+    </span>
+    <span class="fragment fade-in-then-out" data-fragment-index="1">
+      Then <b>$pattern</b> matches, so add it to <b>$result</b>
+    </span>
+    <span class="fragment fade-in-then-out" data-fragment-index="2">
+      Shift the <b>$pattern</b> to the left by 1
+    </span>
+    <span class="fragment fade-in" data-fragment-index="3">
+      Shift <b>$valid</b> to the right by 1
+    </span>
+  </div>
   </section>
 
   <section>
@@ -858,7 +1139,7 @@
   </section>
 
   <section>
-  <pre><code class="lang-clojure" data-trim data-line-numbers="1-2|3-9|8|9|10-11|12-15">
+  <pre><code class="lang-clojure" data-trim data-line-numbers="1-2|3-9|8|9|10-11|12-15" data-fragment-index="0">
     ;; Get the index of the lowest set bit
     (local.set $i (i64.ctz (local.get $empty)))
     ;; Find the next cell above that is not empty:
@@ -875,6 +1156,30 @@
       (then
         ;; Move the cell above down...
   </code></pre>
+
+  <div class="r-stack">
+    <span class="fragment fade-out" data-fragment-index="0">
+      Get the index of the lowest set bit in <b>$empty</b>
+    </span>
+    <span class="fragment fade-in-then-out" data-fragment-index="0">
+      Keep only the bits that are above this cell
+    </span>
+    <span class="fragment fade-in-then-out" data-fragment-index="1">
+      Wasm doesn't (currently) have <b>i64.not</b> so you can use
+      <b>i64.xor</b> instead
+    </span>
+    <span class="fragment fade-in-then-out" data-fragment-index="2">
+      Shift the vertical column mask, <b>0x0101010101010101</b>, left by
+      <b>$i</b>
+    </span>
+    <span class="fragment fade-in-then-out" data-fragment-index="3">
+      Then find the lowest bit set in <b>$above-bits</b>
+    </span>
+    <span class="fragment fade-in" data-fragment-index="4">
+      If there is a non-empty cell above this one, then swap the cells at
+      <b>$i</b> and <b>$above-idx</b>
+    </span>
+  </div>
   </section>
 
   <section>
