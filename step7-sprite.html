@@ -6,7 +6,7 @@
   .vline { stroke: lightgray; }
   .cell { fill: red; }
   .hilite { stroke: red; fill: rgba(0, 0, 0, 0); }
-  .info text { font-family: monospace; }
+  .info text { font-size: 20px; font-family: monospace; }
   .hflex { display: flex; flex-direction: row; }
 </style>
 <body>
@@ -19,7 +19,7 @@
   let step = (sx * sy + sy) / 2;
 
   const margin = {l: 15, r: 10, t: 15, b: 10};
-  const w = 480, h = 330;
+  const w = 530, h = 330;
   const l = margin.l, r = w - margin.r, t = margin.t, b = h - margin.b;
   const svg = d3.select('body').append('svg')
     .attr('width', w + margin.l + margin.r)
@@ -189,7 +189,7 @@
 
     info
      .append('text')
-     .attr('x', 60)
+     .attr('x', 100)
      .attr('fill', 'currentcolor')
      .text(`j:${j}`);
 
@@ -202,7 +202,7 @@
 
     info
      .append('text')
-     .attr('x', 60)
+     .attr('x', 100)
      .attr('y', 30)
      .attr('fill', 'currentcolor')
      .text(`y+j:${dj}`);

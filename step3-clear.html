@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <style>
-  svg { background-color: #111; color: white; }
+  body { color: white; }
+  svg { background-color: #111; }
   .hline { stroke: lightgray; }
   .vline { stroke: lightgray; }
   .cell { fill: red; }
-  .info text { font-family: monospace; }
+  .hflex { display: flex; flex-direction: row; padding: 4px; }
+  .hflex.spaced span { flex: 1; }
 </style>
 <body>
 </body>
@@ -12,12 +14,33 @@
 <script>
   const tx = 6, ty = 6;
   const dw = 150, dh = 150;
-  const margin = {l: 15, r: 10, t: 15, b: 30};
+  const margin = {l: 15, r: 10, t: 15, b: 10};
   const w = 450, h = 450;
   const l = margin.l, r = w - margin.r, t = margin.t, b = h - margin.b;
-  const svg = d3.select('body').append('svg')
-    .attr('width', w + margin.l + margin.r)
-    .attr('height', h + margin.t + margin.b)
+
+  function hflex(label) {
+    const ret = d3.select('body').append('div').attr('class', 'hflex')
+    if (label) {
+      ret.append('span').text(label).style('width', '5em');
+    }
+    return ret;
+  }
+
+  function range(target, value, min, max, f) {
+    return target
+      .append('input')
+      .style('flex-grow', '1')
+      .attr('type', 'range')
+      .attr('min', min)
+      .attr('max', max)
+      .attr('value', value)
+      .on('input change', e => { f(+e.target.value); update(); });
+  }
+
+  const svg = hflex().style('justify-content', 'center')
+    .append('svg')
+      .attr('width', w + margin.l + margin.r)
+      .attr('height', h + margin.t + margin.b)
   const g = svg.append('g')
     .attr('transform', `translate(${margin.l}, ${margin.t})`);
 
@@ -54,9 +77,6 @@
   const vlines = g.append('g').attr('class', 'vline');
   const cells = g.append('g').attr('class', 'cell')
 
-  const info = svg.append('g').attr('class', 'info')
-    .attr('transform', `translate(${margin.l}, ${h + margin.t})`);
-
   hlines.selectAll('line')
     .data(hData)
     .join('line')
@@ -75,6 +95,12 @@
   const fx = i => xStep(i);
   const fy = i => yStep(i);
   const faddr = i => d3.format("#5x")(0x10000 + i * 4);
+
+  const row = hflex().attr('class', 'hflex spaced');
+  const iEl = row.append('span');
+  const xEl = row.append('span');
+  const yEl = row.append('span');
+  const addrEl = row.append('span');
 
   function update() {
     cellData.length = 0;
@@ -96,45 +122,14 @@
       .attr('y', d => yAxis(d.y))
       .attr('fill', d => d.color);
 
-    info.selectAll('text').remove();
-    info
-     .append('text')
-     .attr('x', 0)
-     .attr('fill', 'currentcolor')
-     .text(`i:${fi(step)}`);
-
-    info
-     .append('text')
-     .attr('x', 60)
-     .attr('fill', 'currentcolor')
-     .text(`x:${fx(step)}`);
-
-    info
-     .append('text')
-     .attr('x', 100)
-     .attr('fill', 'currentcolor')
-     .text(`y:${fy(step)}`);
-
-    info
-     .append('text')
-     .attr('x', 150)
-     .attr('fill', 'currentcolor')
-     .text(`addr:${faddr(step)}`);
+    iEl.text(`i:${fi(step)}`);
+    xEl.text(`x:${fx(step)}`);
+    yEl.text(`y:${fy(step)}`);
+    addrEl.text(`addr:${faddr(step)}`);
   }
 
   update();
 
-  const input = d3.select('body')
-    .append('div')
-    .append('input')
-    .style('width', `${w + margin.l + margin.r}px`)
-    .attr('type', 'range')
-    .attr('min', 0)
-    .attr('max', dw*dh)
-    .attr('value', step)
-    .on('input', e => {
-      step = e.target.value;
-      update();
-    });
+  range(hflex('step:'), step, 0, dw*dh, v => { step = v; });
 
 </script>

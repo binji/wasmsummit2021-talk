@@ -33,7 +33,7 @@
 
 
 <section>
-  Over the past ~3 years, I've made the following demos:
+  Over the past ~3 years, I've made the following WebAssembly demos:
   <section>
     Doomfire - May 2019 - (398 bytes)
   </section>
@@ -85,7 +85,8 @@
 
 <section>
   What we're making this time:
-  <p>match3 demo</p>
+  <div class="fig-container" data-file="wasm-demo.html?wasm=step33&cursor&bg"
+    data-style="width:550px height:550px"></div>
 </section>
 
 
@@ -114,7 +115,7 @@
       margin: 0;
       width: 100%;
       height: 100%;
-    }
+    
     </code></pre>
 
     <div class="r-stack">
@@ -603,11 +604,12 @@
     ...
   )
   </code></pre>
+  Store 1024 bytes of sprite data at 0x100
   </section>
 
   <section>
     <div class="fig-container" data-file="step7-sprite.html"
-      data-style="margin-top:100px width:550px height:580px"></div>
+      data-style="margin-top:100px width:580px height:580px"></div>
 
   <aside class="notes" data-markdown>
     Demo drawing outside of bounds
@@ -762,6 +764,11 @@
   <section>
     <div class="fig-container" data-file="step11-scale.html"
       data-style="margin-top:100px width:550px height:580px"></div>
+  </section>
+
+  <section>
+    <div class="fig-container" data-file="wasm-demo.html?wasm=step11"
+      data-style="margin-top:100px width:550px height:550px"></div>
   </section>
 
 </section>
@@ -1101,6 +1108,25 @@
       Shift <b>$valid</b> to the right by 1
     </span>
   </div>
+  </section>
+
+  <section>
+  <pre><code class="lang-clojure" data-trim data-line-numbers data-fragment-index="0">
+  (i32  ;; ........    ........                 pattern
+        ;; ........    x.......
+        ;; ........    x.......
+        ;; xxx.....    x.......
+         0x00000007  0x00010101)
+  (i64  ;;    xxxxxx..            ........      valid mask
+        ;;    xxxxxx..            ........
+        ;;    xxxxxx..            xxxxxxxx
+        ;;    xxxxxx..            xxxxxxxx
+        ;;    xxxxxx..            xxxxxxxx
+        ;;    xxxxxx..            xxxxxxxx
+        ;;    xxxxxx..            xxxxxxxx
+        ;;    xxxxxx..            xxxxxxxx
+        0x3f3f3f3f3f3f3f3f  0x0000ffffffffffff)
+  </code></pre>
   </section>
 
   <section>

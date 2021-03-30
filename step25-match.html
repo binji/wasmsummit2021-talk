@@ -37,31 +37,13 @@
   const validBits = hflex('valid:').append('span');
 
   const patterns = {
-    h0: [{x: 0, y: 0}, {x: 1, y: 0}, {x: 2, y: 0}],
-    v0: [{x: 0, y: 0}, {x: 0, y: 1}, {x: 0, y: 2}],
-
-    h1: [{x: 0, y: 1}, {x: 1, y: 0}, {x: 2, y: 0}],
-    h2: [{x: 0, y: 0}, {x: 1, y: 1}, {x: 2, y: 0}],
-    h3: [{x: 0, y: 0}, {x: 1, y: 0}, {x: 2, y: 1}],
-    h4: [{x: 0, y: 0}, {x: 1, y: 1}, {x: 2, y: 1}],
-    h5: [{x: 0, y: 1}, {x: 1, y: 0}, {x: 2, y: 1}],
-    h6: [{x: 0, y: 1}, {x: 1, y: 1}, {x: 2, y: 0}],
-    h7: [{x: 0, y: 0}, {x: 1, y: 0}, {x: 3, y: 0}],
-    h8: [{x: 0, y: 0}, {x: 2, y: 0}, {x: 3, y: 0}],
-
-    v1: [{y: 0, x: 1}, {y: 1, x: 0}, {y: 2, x: 0}],
-    v2: [{y: 0, x: 0}, {y: 1, x: 1}, {y: 2, x: 0}],
-    v3: [{y: 0, x: 0}, {y: 1, x: 0}, {y: 2, x: 1}],
-    v4: [{y: 0, x: 0}, {y: 1, x: 1}, {y: 2, x: 1}],
-    v5: [{y: 0, x: 1}, {y: 1, x: 0}, {y: 2, x: 1}],
-    v6: [{y: 0, x: 1}, {y: 1, x: 1}, {y: 2, x: 0}],
-    v7: [{y: 0, x: 0}, {y: 1, x: 0}, {y: 3, x: 0}],
-    v8: [{y: 0, x: 0}, {y: 2, x: 0}, {y: 3, x: 0}],
+    horizontal: [{x: 0, y: 0}, {x: 1, y: 0}, {x: 2, y: 0}],
+    vertical: [{x: 0, y: 0}, {x: 0, y: 1}, {x: 0, y: 2}],
   };
 
   const maxSteps = 8 * 8 - 1;
   let step = 0;
-  let pattern = patterns.h0;
+  let pattern = patterns.horizontal;
   const emoji = [];
 
   const get = (x, y) => {
@@ -328,9 +310,6 @@
   button(brow, 'next match', nextMatch);
   button(brow, 'random', randomize);
   steps = range(brow, 'step', step, 0, maxSteps, v => {step = v;});
-  radio(hflex('Vpattern:'), 'pattern',
-      ['v0', 'v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8'], doPattern);
-  radio(hflex('Hpattern:'), 'pattern',
-      ['h0', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'h7', 'h8'], doPattern);
+  radio(hflex('Pattern:'), 'pattern', ['horizontal', 'vertical'], doPattern);
   radio(hflex('display:'), 'display', ['emoji', 'index', 'value'], doDisplay);
 </script>
