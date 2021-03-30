@@ -115,7 +115,7 @@
       margin: 0;
       width: 100%;
       height: 100%;
-    
+
     </code></pre>
 
     <div class="r-stack">
@@ -534,7 +534,7 @@
 </section>
 
 <section>
-  Step 7: Drawing a sprite
+  Step 7: Drawing a Sprite
 
   <section>
   <pre><code class="lang-clojure" data-trim data-line-numbers="3">
@@ -620,7 +620,7 @@
 
 
 <section>
-  Step 8-9: Masking and clipping pixels
+  Step 8-9: Masking and Clipping Pixels
 
   <section>
   <pre><code class="lang-clojure" data-trim data-line-numbers="4|5-7" data-fragment-index="0">
@@ -683,16 +683,25 @@
 <section>
 
   <section>
-    <p>⏩ Step 10: Draw sprites with palette</p>
+    <p>⏩ Step 10: Draw Sprites With Palette</p>
     <div class="fig-container" data-file="wasm-demo.html?wasm=step10"
       data-style="width:550px height:550px"></div>
+  </section>
+
+  <section>
+    <h3>What's different?</h3>
+    <ul>
+      <li>Each sprite pixel is now <b>1 byte</b></li>
+      <li>The size of one sprite goes from <b>1024</b> bytes to <b>256</b></li>
+      <li>A 16-color palette is included for <b>64 bytes</b></li>
+    </ul>
   </section>
 
 </section>
 
 
 <section>
-  Step 11: Scaling sprites
+  Step 11: Scaling Sprites
 
   <section>
   <pre><code class="lang-clojure" data-trim data-line-numbers="3|4|5-6|9-15" data-fragment-index="0">
@@ -1048,7 +1057,7 @@
 
 
 <section>
-  Step 25: Checking for matches
+  Step 25: Checking For Matches
 
   <section>
     Remember when I said that using <b>1 bit per cell</b> makes some algorithms
@@ -1140,7 +1149,7 @@
 <section>
 
   <section>
-    <p>⏩ Step 26: Swap back If No Match</p>
+    <p>⏩ Step 26: Swap Back If No Match</p>
     <div class="fig-container" data-file="wasm-demo.html?wasm=step26&cursor&bg"
       data-style="width:550px height:550px"></div>
   </section>
@@ -1217,21 +1226,111 @@
 
 
 <section>
-  <p>⏩ Step 28: Randomize board at start</p>
-  <div class="fig-container" data-file="wasm-demo.html?wasm=step29&cursor&bg"
-    data-style="width:550px height:550px"></div>
+
+  <section>
+    <p>⏩ Step 28: Randomize Board at Start</p>
+    <div class="fig-container" data-file="wasm-demo.html?wasm=step28&cursor&bg"
+      data-style="width:550px height:550px"></div>
+  </section>
+
+  <section>
+    <p>⏩ Step 29: Check Matches After Dropping</p>
+    <div class="fig-container" data-file="wasm-demo.html?wasm=step29&cursor&bg"
+      data-style="width:550px height:550px"></div>
+  </section>
+
+  <section>
+    <p>⏩ Step 30: Animate Match Removal</p>
+    <div class="fig-container" data-file="wasm-demo.html?wasm=step30&cursor&bg"
+      data-style="width:550px height:550px"></div>
+  </section>
+
 </section>
 
-<section>
-  <p>⏩ Step 29: Check matches after dropping</p>
-  <div class="fig-container" data-file="wasm-demo.html?wasm=step30&cursor&bg"
-    data-style="width:550px height:550px"></div>
-</section>
 
 <section>
-  <p>⏩ Step 30: Animate match removal</p>
-  <div class="fig-container" data-file="wasm-demo.html?wasm=step31&cursor&bg"
-    data-style="width:550px height:550px"></div>
+  Step 31: Checking For Game Over
+
+  <section>
+    Remember when I said that using <b>1 bit per cell</b> makes some algorithms
+    smaller? 😀
+  </section>
+
+  <section>
+    <div class="fig-container" data-file="step32-match.html"
+      data-style="margin-top:100px width:750px height:650px"></div>
+  </section>
+
+  <section>
+  <pre><code class="lang-clojure" data-trim data-line-numbers="1-6|8-15" data-fragment-index="0">
+  (i32  ;; ..x.....    .x......    x.......    xx......  
+        ;; xx......    x.x.....    .xx.....    ..x.....  
+         0x00000403  0x00000205  0x00000106  0x00000304  
+        ;; x.x.....    .xx.....    ........    ........ 
+        ;; .x......    x.......    xx.x....    x.xx.... 
+         0x00000502  0x00000601  0x0000000b  0x0000000d )
+
+  (i64 0x003f3f3f3f3f3f3f   ;; ........      xxxxx...
+       0x003f3f3f3f3f3f3f   ;; xxxxxx..      xxxxx...
+       0x003f3f3f3f3f3f3f   ;; xxxxxx..      xxxxx...
+       0x003f3f3f3f3f3f3f   ;; xxxxxx..      xxxxx...
+       0x003f3f3f3f3f3f3f   ;; xxxxxx..      xxxxx...
+       0x003f3f3f3f3f3f3f   ;; xxxxxx..      xxxxx...
+       0x1f1f1f1f1f1f1f1f   ;; xxxxxx..      xxxxx...
+       0x1f1f1f1f1f1f1f1f ) ;; xxxxxx.. *6   xxxxx... *2
+  </code></pre>
+
+  <div class="r-stack">
+    <span class="fragment fade-out" data-fragment-index="0">
+      horizontal patterns
+    </span>
+    <span class="fragment fade-in" data-fragment-index="0">
+      horizontal valid masks
+    </span>
+  </div>
+  </section>
+
+</section>
+
+
+<section>
+
+  <section>
+    <h3 class="r-fit-text">Done!</h3>
+    <p>right?</p>
+  </section>
+
+  <section>
+    <h3>What's left?</h3>
+    <ul>
+      <li>Implementing score</li>
+      <li>Title screen / Game Over screen?</li>
+      <li>Combo multiplier?</li>
+      <li>Optimizing size (currently at <b>4817</b> bytes!)</li>
+    </ul>
+  </section>
+
+  <section>
+    <h3>Resources</h3>
+    <dl>
+      <dt>These Slides</dt>
+      <dd><a href="https://github.com/binji/wasmsummit2021-talk">github.com/binji/wasmsummit2021-talk</a></dd>
+
+      <dt>Raw Wasm</dt>
+      <dd><a href="https://github.com/binji/raw-wasm">github.com/binji/raw-wasm</a></dd>
+
+      <dt>Wabt (WebAssembly Binary Toolkit)</dt>
+      <dd><a href="https://github.com/webassembly/wabt">github.com/webassembly/wabt</a></dd>
+
+      <dt>Twitter</dt>
+      <dd><a href="https://twitter.com/binjimint">@binjimint</a></dd>
+    </dl>
+    <div style="position:absolute; right:0; bottom:45px;"
+      class="fig-container" data-file="wasm-demo.html?wasm=step32&cursor&bg"
+      data-style="width:150px height:150px"></div>
+    <span style="float:right">Thanks!</span>
+  </section>
+
 </section>
 
 
