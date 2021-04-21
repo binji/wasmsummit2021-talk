@@ -5,7 +5,7 @@
   .hline { stroke: lightgray; }
   .vline { stroke: lightgray; }
   .cell { fill: steelblue; opacity: 0.75; }
-  .info text { font-family: monospace; }
+  .gridbits { font-family: monospace; }
   .emoji { font-size: 35px; }
   .hflex { display: flex; flex-direction: row; padding: 4px; }
 </style>
@@ -32,9 +32,9 @@
   const g = svg.append('g')
     .attr('transform', `translate(${margin.l}, ${margin.t})`);
 
-  const gridBits = hflex('grid:').append('span');
-  const patternBits = hflex('pattern:').append('span');
-  const validBits = hflex('valid:').append('span');
+  const gridBits = hflex('grid:').append('span').attr('class', 'gridbits');
+  const patternBits = hflex('pattern:').append('span').attr('class', 'gridbits');
+  const validBits = hflex('valid:').append('span').attr('class', 'gridbits');
 
   const patterns = {
     horizontal: [{x: 0, y: 0}, {x: 1, y: 0}, {x: 2, y: 0}],
@@ -310,6 +310,6 @@
   button(brow, 'next match', nextMatch);
   button(brow, 'random', randomize);
   steps = range(brow, 'step', step, 0, maxSteps, v => {step = v;});
-  radio(hflex('Pattern:'), 'pattern', ['horizontal', 'vertical'], doPattern);
+  radio(hflex('direction:'), 'pattern', ['horizontal', 'vertical'], doPattern);
   radio(hflex('display:'), 'display', ['emoji', 'index', 'value'], doDisplay);
 </script>

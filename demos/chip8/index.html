@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<head>
+  <style>
+    body {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      background-color: #555;
+      margin: 0;
+      width: 100%;
+      height: 100%;
+    }
+    canvas {
+      object-fit: contain;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+      image-rendering: -moz-crisp-edges;
+    }
+  </style>
+</head>
+<body>
+  <canvas width="64" height="32"></canvas>
+  <input type="file" id="openfile" hidden>
+  <script>
+    let $ = document.querySelector.bind(document);
+    let step = 20;
+    let keyDownFn;
+    let keyUpFn;
+
+    let module;
+    (async function() {
+      let response = await fetch('chip8.wasm');
+      let bytes = await response.arrayBuffer();
+      module = await WebAssembly.compile(bytes);
+
+      let rom = await fetch('roms/Space Invaders [David Winter].ch8');
+      let rombytes = await rom.arrayBuffer();
+
+      loadRom(rombytes);
+    })();
+
+    async function loadRom(romBytes) {
+      let instance = await WebAssembly.instantiate(module, {Math});
+      let mem = instance.exports.mem;
+
+      let u16 = new Uint16Array(mem.buffer, 0x10, 1);
+      let setkey = (index, down) => {
+        if (down) {
+          u16[0] |= (1 << index);
+        } else {
+          u16[0] &= ~(1 << index);
+        }
+      };
+
+      let onkey = (down, event) => {
+        switch (event.code) {
+          case 'Digit1': setkey(1, down); break;
+          case 'Digit2': setkey(2, down); break;
+          case 'Digit3': setkey(3, down); break;
+          case 'Digit4': setkey(12, down); break;
+          case 'KeyQ': setkey(4, down); break;
+          case 'KeyW': setkey(5, down); break;
+          case 'KeyE': setkey(6, down); break;
+          case 'KeyR': setkey(13, down); break;
+          case 'KeyA': setkey(7, down); break;
+          case 'KeyS': setkey(8, down); break;
+          case 'KeyD': setkey(9, down); break;
+          case 'KeyF': setkey(14, down); break;
+          case 'KeyZ': setkey(10, down); break;
+          case 'KeyX': setkey(0, down); break;
+          case 'KeyC': setkey(11, down); break;
+          case 'KeyV': setkey(15, down); break;
+          case 'ArrowUp': setkey(5, down); break;
+          case 'ArrowLeft': setkey(7, down); break;
+          case 'ArrowDown': setkey(8, down); break;
+          case 'ArrowRight': setkey(9, down); break;
+        }
+      };
+      if (keyDownFn) { window.removeEventListener('keydown', keyDownFn); }
+      if (keyUpFn) { window.removeEventListener('keyup', keyUpFn); }
+      keyDownFn = onkey.bind(null, 1);
+      keyUpFn = onkey.bind(null, 0);
+      window.addEventListener('keydown', keyDownFn, false);
+      window.addEventListener('keyup', keyUpFn, false);
+
+      let rom = new Uint8Array(mem.buffer, 0x200, 0xe00);
+      rom.set(new Uint8Array(romBytes));
+
+      let canvas = document.querySelector('canvas');
+      let canvasData = new Uint8Array(mem.buffer, 0x1000, 8192);
+      let context = canvas.getContext('2d');
+      let imageData = context.createImageData(64, 32);
+
+      (function update() {
+        requestAnimationFrame(update);
+        if (step) {
+          instance.exports.run(step);
+        }
+        imageData.data.set(canvasData);
+        context.putImageData(imageData, 0, 0);
+      })();
+    }
+  </script>
+</body>
+

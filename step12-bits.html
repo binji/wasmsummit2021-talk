@@ -5,9 +5,9 @@
   .hline { stroke: lightgray; }
   .vline { stroke: lightgray; }
   .cell { fill: steelblue; opacity: 0.75; }
-  .info text { font-family: monospace; }
   .emoji { font-size: 35px; }
   .hflex { display: flex; flex-direction: row; padding: 4px; }
+  .gridbits { font-family: monospace; }
 </style>
 <body>
 </body>
@@ -35,7 +35,7 @@
 
   let gridBits = [];
   for (let e of emojis) {
-    gridBits.push(hflex(`grid${e}:`).append('span'));
+    gridBits.push(hflex(`grid${e}:`).append('span').attr('class', 'gridbits'));
   }
 
   const maxSteps = 8 * 8 - 1;

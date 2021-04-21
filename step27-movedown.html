@@ -5,7 +5,7 @@
   .hline { stroke: lightgray; }
   .vline { stroke: lightgray; }
   .cell { fill: steelblue; opacity: 0.75; }
-  .info text { font-family: monospace; }
+  .gridbits { font-family: monospace; }
   .emoji { font-size: 35px; }
   .hflex { display: flex; flex-direction: row; padding: 4px; }
 </style>
@@ -33,8 +33,8 @@
   const g = svg.append('g')
     .attr('transform', `translate(${margin.l}, ${margin.t})`);
 
-  const emptyBits = hflex('empty:').append('span');
-  const searchBits = hflex('search:').append('span');
+  const emptyBits = hflex('empty:').append('span').attr('class', 'gridbits');
+  const searchBits = hflex('search:').append('span').attr('class', 'gridbits');
 
   let maxSteps = 0;
   let step = 0;

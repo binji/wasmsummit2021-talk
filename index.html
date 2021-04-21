@@ -29,33 +29,55 @@
       <img class="plain" src="benji2x.png"></img>
     </td>
   </table>
+
+  <aside class="notes" data-markdown>
+    1. Ben Smith
+    1. Grown a beard since Wasm Summit 2021
+    1. WebAssembly Enthusiast
+  </aside>
 </section>
 
 
 <section>
   Over the past ~3 years, I've made the following WebAssembly demos:
   <section>
+    <div class="fig-container" data-file="demos/doomfire/index.html"
+      data-style="margin-top:50px width:450px height:450px"></div>
     Doomfire - May 2019 - (398 bytes)
   </section>
   <section>
+    <div class="fig-container" data-file="demos/metaball/index.html"
+      data-style="margin-top:50px width:450px height:450px"></div>
     Metaball - May 2019 - (452 bytes)
   </section>
   <section>
+    <div class="fig-container" data-file="demos/raytrace/index.html"
+      data-style="margin-top:50px width:450px height:450px"></div>
     Raytrace - May 2019 - (1486 bytes)
   </section>
   <section>
+    <div class="fig-container" data-file="demos/snake/index.html"
+      data-style="margin-top:50px width:450px height:450px"></div>
     Snake - June 2019 - (1976 bytes)
   </section>
   <section>
+    <div class="fig-container" data-file="demos/maze/index.html"
+      data-style="margin-top:50px width:450px height:450px"></div>
     Maze - October 2019 - (2047 bytes)
   </section>
   <section>
+    <div class="fig-container" data-file="demos/chip8/index.html"
+      data-style="margin-top:50px width:600px height:300px"></div>
     Chip 8 - September 2020 - (1020 bytes)
   </section>
   <section>
+    <div class="fig-container" data-file="demos/dino/index.html"
+      data-style="margin-top:50px width:600px height:200px"></div>
     Dino - December 2020 - (2020 bytes)
   </section>
   <section>
+    <div class="fig-container" data-file="demos/inflate/index.html"
+      data-style="margin-top:50px width:450px height:450px"></div>
     Inflate - January 2021 - (991 bytes)
   </section>
 </section>
@@ -80,6 +102,11 @@
     <li>Make it as small as possible</li>
     <li>Try something new and have fun!</li>
   </ul>
+
+  <aside class="notes" data-markdown>
+    People say that you're not supposed to write wasm by hand, I wanted to
+    see what it was like!
+  </aside>
 </section>
 
 
@@ -91,7 +118,7 @@
 
 
 <section>
-  <h2>How our match 3 works:</h2>
+  <h3>How our match 3 works:</h3>
   <ul>
     <li>8x8 grid of 8 different emojis 😀🤩🥵🥶🤠😱😈💩</li>
     <li>3 adjacent, identical emojis in a row or column are removed</li>
@@ -99,6 +126,13 @@
     <li>You can swap two emojis horizontally or vertically</li>
     <li>If there are no swaps left, the game is over</li>
   </ul>
+</section>
+
+
+<section>
+  <section>
+  <h3 class="r-fit-text">Let's dive into the code!</h3>
+  </section>
 </section>
 
 
@@ -126,6 +160,10 @@
         That fills the screen
       </span>
     </div>
+
+    <aside class="notes" data-markdown>
+      Start with  CSS
+    </aside>
   </section>
 
   <section>
@@ -157,6 +195,10 @@
     </script></code></pre>
     The canvas element itself is 150x150 pixels,<br> but will be
     stretched to fill the available space (preserving aspect ratio).
+
+    <aside class="notes" data-markdown>
+      Now the HTML
+    </aside>
   </section>
 
 </section>
@@ -195,11 +237,19 @@
         Create a 150*150*4 byte view of Wasm memory to use for canvas data
       </span>
     </div>
+
+    <aside class="notes" data-markdown>
+      Minimal JS
+    </aside>
   </section>
 
   <section>
     <div class="fig-container" data-file="step2-grid.html"
       data-style="margin-top:100px width:550px height:580px"></div>
+
+    <aside class="notes" data-markdown>
+      Demo top-left and bottom-right corners, and their addresses
+    </aside>
   </section>
 
   <section>
@@ -261,6 +311,10 @@
         Create and export the per-frame function
       </span>
     </div>
+
+    <aside class="notes" data-markdown>
+      Finally, the beginnings of our Wasm file!
+    </aside>
   </section>
 </section>
 
@@ -332,6 +386,10 @@
   <section>
     <div class="fig-container" data-file="step3-clear.html"
       data-style="margin-top:100px width:550px height:580px"></div>
+
+    <aside class="notes" data-markdown>
+      Demo top-left and bottom-right corners again
+    </aside>
   </section>
 
 </section>
@@ -466,6 +524,10 @@
   <section>
     <div class="fig-container" data-file="wasm-demo.html?wasm=step5"
       data-style="margin-top:100px width:550px height:550px"></div>
+
+    <aside class="notes" data-markdown>
+      Move around and click
+    </aside>
   </section>
 
 </section>
@@ -546,6 +608,10 @@
   </code></pre>
   Start with <b>$fill-rect</b>, but change the
   <b>$color</b> parameter to <b>$src</b>
+
+  <aside class="notes" data-markdown>
+    $src is a pointer, which (for now) is always an i32 in Wasm
+  </aside>
   </section>
 
   <section>
@@ -675,6 +741,10 @@
   <section>
     <div class="fig-container" data-file="wasm-demo.html?wasm=step9"
       data-style="margin-top:100px width:550px height:550px"></div>
+
+    <aside class="notes" data-markdown>
+      Show overlapping sprites
+    </aside>
   </section>
 
 </section>
@@ -686,6 +756,10 @@
     <p>⏩ Step 10: Draw Sprites With Palette</p>
     <div class="fig-container" data-file="wasm-demo.html?wasm=step10"
       data-style="width:550px height:550px"></div>
+
+    <aside class="notes" data-markdown>
+      Fast-forward, since we only have 30 minutes!
+    </aside>
   </section>
 
   <section>
@@ -778,6 +852,10 @@
   <section>
     <div class="fig-container" data-file="wasm-demo.html?wasm=step11"
       data-style="margin-top:100px width:550px height:550px"></div>
+
+    <aside class="notes" data-markdown>
+      Click to stretch
+    </aside>
   </section>
 
 </section>
@@ -814,6 +892,7 @@
       data-style="margin-top:100px width:750px height:650px"></div>
 
   <aside class="notes" data-markdown>
+    Show that the highlighted cell lines up with the pattern bits
   </aside>
   </section>
 
